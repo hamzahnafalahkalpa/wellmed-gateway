@@ -1,0 +1,26 @@
+{
+    "name": "projects/wellmed-gateway",
+    "autoload": {
+        "psr-4": {
+            "Projects\\WellmedGateway\\": "src/"
+        },
+        "files":[
+            "src/helper.php"
+        ]
+    },
+    "authors": [
+        {
+            "name": "Hamzah Nur Alfalah",
+            "email": "hamzahnafalah@gmail.com"
+        }
+    ],
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Projects\\WellmedGateway\\WellmedGatewayServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
