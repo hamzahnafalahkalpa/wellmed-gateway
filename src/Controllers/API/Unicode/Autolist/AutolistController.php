@@ -24,7 +24,6 @@ class AutolistController extends ApiController{
             'search_name'  => request()->search_name ?? request()->search_value,
             'search_value' => null
         ]);
-
         $morph = Str::studly(request()->morph);
         switch ($morph) {
             case 'Unicode':

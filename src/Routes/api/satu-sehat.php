@@ -13,10 +13,15 @@ use Projects\WellmedGateway\Controllers\API\SatuSehat\{
     Observation\ObservationController
 };
 
-Route::apiResource('/token',AuthController::class)->only('store');
-Route::apiResource('/patient',PatientController::class)->only('store','update');
-Route::apiResource('/organization',OrganizationController::class)->only('store','update');
-Route::apiResource('/location',LocationController::class)->only('store','update');
-Route::apiResource('/encounter',EncounterController::class)->only('store','update');
-Route::apiResource('/observation',ObservationController::class)->only('store','update');
-Route::apiResource('/autolist/{morph}/{type}',AutolistController::class)->only('index');
+Route::group([
+    'prefix' => 'satu-sehat',
+    'as' => 'satu-sehat.'
+],function(){
+    Route::apiResource('/token',AuthController::class)->only('store');
+    Route::apiResource('/patient',PatientController::class)->only('store','update');
+    Route::apiResource('/organization',OrganizationController::class)->only('store','update');
+    Route::apiResource('/location',LocationController::class)->only('store','update');
+    Route::apiResource('/encounter',EncounterController::class)->only('store','update');
+    Route::apiResource('/observation',ObservationController::class)->only('store','update');
+    Route::apiResource('/autolist/{morph}/{type}',AutolistController::class)->only('index');
+});
