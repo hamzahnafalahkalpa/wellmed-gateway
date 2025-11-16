@@ -12,5 +12,5 @@ ApiAccess::secure(function(){
     ],function(){
         LaravelSupport::callRoutes(__DIR__.'/api');
     });
-    Route::post('api/add-tenant',[AddTenantController::class,'store'])->name('add-tenant.store');
 });
+Route::post('api/add-tenant',[AddTenantController::class,'store'])->name('add-tenant.store');

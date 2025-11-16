@@ -13,6 +13,15 @@ class VisitPatientController extends EnvironmentController{
     }
 
     public function store(StoreRequest $request){
+        $this->commonRequest();
+        if (isset($this->global_employee)){
+            request()->merge([
+                'practitioner_evaluation' => [
+                    'practitioner_id' => $this->global_employee->getKey(),
+                    'role_as' => 'ADMITTER'
+                ]
+            ]);
+        }
         return $this->storeVisitPatient();
     }
 

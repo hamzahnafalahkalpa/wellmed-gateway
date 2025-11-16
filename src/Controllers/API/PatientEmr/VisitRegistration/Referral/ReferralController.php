@@ -17,6 +17,17 @@ class ReferralController extends EnvironmentController
     }
 
     public function store(StoreRequest $request){
+        $this->commonRequest();
+        $visit_registration = request()->visit_registration ?? [
+            'id' => null,
+            'medic_service_id' => request()->medic_service_id,
+            'practitioner_evaluation' => [
+                'practitioner_id' => $this->global_employee->getKey()
+            ]
+        ];
+        request()->merge([
+            'visit_registration' => $visit_registration
+        ]);
         return $this->storeReferral();
     }
 
