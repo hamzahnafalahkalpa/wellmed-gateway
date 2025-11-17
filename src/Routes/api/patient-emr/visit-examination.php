@@ -1,21 +1,10 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Projects\WellmedGateway\Controllers\API\PatientEmr\Patient\PatientController;
-use Projects\WellmedGateway\Controllers\API\PatientEmr\Patient\VisitPatient\{
-    VisitRegistration\VisitExamination\Assessment\AssessmentController,
-    VisitRegistration\Referral\ReferralController,
-    VisitRegistration\VisitExamination\Examination\ExaminationController,
-    VisitRegistration\VisitExamination\VisitExaminationController,
-    VisitRegistration\VisitRegistrationController,
-    VisitPatientController
-};
 use Projects\WellmedGateway\Controllers\API\PatientEmr\Patient\VisitRegistration\{
     VisitExamination\Assessment\AssessmentController as VRAssessmentController,
     VisitExamination\Examination\ExaminationController as VRExaminationController,
     VisitExamination\VisitExaminationController as VRVisitExaminationController,
-    Referral\ReferralController as VRReferralController,
-    VisitRegistrationController as VRVisitRegistrationController
 };
 
 /*

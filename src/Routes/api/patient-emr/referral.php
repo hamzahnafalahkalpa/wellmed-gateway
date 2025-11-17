@@ -1,8 +1,9 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Hanafalah\LaravelSupport\Concerns\Support\HasRequestData;
-use Hanafalah\ModulePatient\Contracts\Data\PatientData;
+use Projects\WellmedGateway\Controllers\API\PatientEmr\{
+    Referral\ReferralController,
+};
 
 /*
 |--------------------------------------------------------------------------
@@ -14,11 +15,5 @@ use Hanafalah\ModulePatient\Contracts\Data\PatientData;
 | is assigned the "api" middleware group. Enjoy building your API!
 |
 */
-Route::group([
-    "prefix" => "/patient-emr",
-    "as"     => "patient-emr.",
-],function() {
-    include_once(__DIR__."/patient-emr/patient.php");
-    include_once(__DIR__."/patient-emr/referral.php");
-    include_once(__DIR__."/patient-emr/visit-registration.php");
-});
+
+Route::apiResource('/referral',ReferralController::class)->parameters(['referral' => 'id']);

@@ -18,6 +18,14 @@ class ReferralController extends EnvironmentController
 
     public function store(StoreRequest $request){
         $this->commonRequest();
+        if (isset(request()->medic_service_id)){
+            $medic_service = $this->MedicServiceModel()->findOrFail(request()->medic_service_id);
+            if (in_array($medic_service->label,config('module-patient.direct_referral_froms'))){
+                request()->merge([
+                    'status' => 'PROCESS'
+                ]);
+            }
+        }
         $visit_registration = request()->visit_registration ?? [
             'id' => null,
             'medic_service_id' => request()->medic_service_id,
@@ -25,7 +33,10 @@ class ReferralController extends EnvironmentController
                 'practitioner_id' => $this->global_employee->getKey()
             ]
         ];
+        $timezone = config('app.client_timezone', 'Asia/Jakarta');
+        $today = \Carbon\Carbon::now($timezone)->format('Y-m-d');
         request()->merge([
+            'visited_at' => request()->visited_at ?? $today,
             'visit_registration' => $visit_registration
         ]);
         return $this->storeReferral();

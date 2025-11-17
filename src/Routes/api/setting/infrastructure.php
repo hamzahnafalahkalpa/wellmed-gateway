@@ -4,13 +4,9 @@ use Illuminate\Support\Facades\Route;
 use Projects\WellmedGateway\Controllers\API\Setting\{
     AgentController,
     BuildingController,
-    ClassRoomItemCategoryController,
     ClassRoomController,
     CompanyController,
-    ExternalFacilityController,
     PayerController,
-    PosyanduController,
-    PustuController,
     RoomController,
     RoomItemCategoryController
 };
@@ -27,7 +23,4 @@ Route::group([
     Route::apiResource('/agent',AgentController::class)->parameters(['agent' => 'id']);
     Route::apiResource('/payer',PayerController::class)->parameters(['payer' => 'id']);
     Route::apiResource('/company',CompanyController::class)->parameters(['company' => 'id']);
-    Route::apiResource('/pustu',PustuController::class)->parameters(['pustu' => 'id']);
-    Route::apiResource('/posyandu',PosyanduController::class)->parameters(['posyandu' => 'id']);
-    Route::apiResource('/external-facility',ExternalFacilityController::class)->parameters(['external-facility' => 'id']);
 });

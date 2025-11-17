@@ -5,17 +5,18 @@ namespace Projects\WellmedGateway\Jobs;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Artisan;
+use Projects\WellmedBackbone\Jobs\JobRequest;
+use Illuminate\Queue\SerializesModels;
 
 class AddTenantJob implements ShouldQueue
 {
-    use Queueable;
+    use Queueable, SerializesModels;
 
-    /**
-     * Create a new job instance.
-     */
-    public function __construct()
+    public array $data;
+
+    public function __construct(array $data)
     {
-        //
+        $this->data = $data;
     }
 
     /**
@@ -23,6 +24,7 @@ class AddTenantJob implements ShouldQueue
      */
     public function handle(): void
     {
+        JobRequest::set($this->data);        
         Artisan::call('db:seed',[
             '--class' => "Projects\WellmedBackbone\\Database\Seeders\\AddDatabaseSeeder"
         ]);   
