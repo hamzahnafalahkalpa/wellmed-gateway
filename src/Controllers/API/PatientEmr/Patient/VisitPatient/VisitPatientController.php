@@ -23,9 +23,12 @@ class VisitPatientController extends EnvironmentController{
         $this->commonRequest();
         if (isset($this->global_employee)){
             request()->merge([
-                'practitioner_evaluation' => [
-                    'practitioner_id' => $this->global_employee->getKey(),
-                    'role_as' => 'ADMITTER'
+                'practitioner_evaluations' => [
+                    [
+                        'practitioner_type' => 'Employee',
+                        'practitioner_id' => $this->global_employee->getKey(),
+                        'role_as' => 'ADMITTER'
+                    ]
                 ]
             ]);
         }

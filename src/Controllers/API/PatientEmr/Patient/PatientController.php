@@ -47,6 +47,11 @@ class PatientController extends EnvironmentController{
             $visit_patient = [
                 'id' => null,
                 "patient_type_service_id" => $patient_type_service_id,
+                'practitioner_evaluations' => [[
+                    'practitioner_type' => 'Employee',
+                    'practitioner_id'   => $this->global_employee->getKey(),
+                    'role_as' => 'ADMITTER'
+                ]],
                 'visit_registration' => [
                     'id' => null,
                     'status' => 'PROCESSING',
