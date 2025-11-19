@@ -25,7 +25,7 @@ class StoreRequest extends FormRequest
     {  
         return [
             'id'   => ['nullable',$this->idValidation('SupplyCategory')],
-            'name' => ['required','string',$this->uniqueValidation('SupplyCategory')]
+            'name' => ['required','string']
         ];
     }
 }
