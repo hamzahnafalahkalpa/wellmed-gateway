@@ -24,7 +24,8 @@ class AddTenantJob implements ShouldQueue
      */
     public function handle(): void
     {
-        JobRequest::set($this->data);        
+        JobRequest::set($this->data);      
+
         Artisan::call('db:seed',[
             '--class' => "Projects\WellmedBackbone\\Database\Seeders\\AddDatabaseSeeder"
         ]);   

@@ -2,16 +2,18 @@
 
 namespace Projects\WellmedGateway\Controllers\API\PatientEmr\Patient;
 
+use Projects\WellmedGateway\Jobs\ElasticJob;
 use Projects\WellmedGateway\Requests\API\PatientEmr\Patient\{
     ShowRequest, ViewRequest, DeleteRequest, StoreRequest
 };
+use Projects\WellmedGateway\Schemas\Elastic;
 
 class PatientController extends EnvironmentController{
 
     public function index(ViewRequest $request){
         $this->userAttempt();
         $this->recombineRequest();
-        return $this->__schema->viewPatientPaginate();
+        return $this->__patient_schema->viewPatientPaginate();
     }
 
     public function store(StoreRequest $request){
@@ -70,16 +72,34 @@ class PatientController extends EnvironmentController{
         $data = request()->all();
         unset($data['visit_examination']);
         request()->replace($data);
-        return $this->__schema->storePatient();
+        $patient = $this->__patient_schema->storePatient();
+        $bulks = [
+            [
+                'index' => config('app.elasticsearch.indexes.patient.full_name'),
+                'data'  => [
+                    $patient
+                ]
+            ]
+        ];
+        if (isset($patient['visit_examination'])){
+            $bulks = array_merge($bulks,$this->elasticForVisitPatient($patient['visit_examination']['visit_patient_id'],true));
+        }
+        dispatch(new ElasticJob([
+            'type'  => 'BULK',
+            'datas' => [...$bulks]
+        ]))
+        ->onQueue('elasticsearch')
+        ->onConnection('rabbitmq');
+        return $patient;
     }
 
     public function show(ShowRequest $request){
         $this->userAttempt();
-        return $this->__schema->showPatient();
+        return $this->__patient_schema->showPatient();
     }
 
     public function destroy(DeleteRequest $request){
         $this->userAttempt();
-        return $this->__schema->deletePatient();
+        return $this->__patient_schema->deletePatient();
     }
 }

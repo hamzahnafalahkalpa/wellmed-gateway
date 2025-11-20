@@ -28,8 +28,8 @@ class EmployeeController extends ApiController{
             $user_reference = request()->user_reference;
             $user_reference['workspace_type'] = 'Tenant';
             $user_reference['workspace_id']   = tenancy()->tenant->getKey();
+            $user_reference['user']['email_verified_at'] = now();
             request()->merge([
-                'email_verified_at' => now(),
                 'user_reference' => $user_reference
             ]);
         }

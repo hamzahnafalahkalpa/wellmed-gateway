@@ -18,7 +18,7 @@ class EnvironmentController extends EnvEnvironmentController
         if (isset(request()->visit_examination_id)) {
             $visit_examination = $this->VisitExaminationModel()->findOrFail(request()->visit_examination_id);
             request()->merge([
-                'patient_id' => $visit_examination->patient_id,
+                'patient_id' => $visit_examination->patient_id
             ]);
         }
 

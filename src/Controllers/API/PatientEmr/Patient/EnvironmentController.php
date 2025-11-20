@@ -2,20 +2,13 @@
 
 namespace Projects\WellmedGateway\Controllers\API\PatientEmr\Patient;
 
-use Projects\WellmedBackbone\Contracts\Schemas\ModulePatient\Patient;
-use Projects\WellmedGateway\Controllers\API\ApiController as ApiBaseController;
+use Projects\WellmedGateway\Controllers\API\PatientEmr\EnvironmentController as GeneralEnvironmentController;
 
-class EnvironmentController extends ApiBaseController{
-
-    public function __construct(
-        protected Patient $__schema,
-    ){
-        parent::__construct();
-    }
+class EnvironmentController extends GeneralEnvironmentController{
 
     protected function recombineRequest(){
         if (isset(request()->search_value)){
-            $this->__schema->setParamLogic('or');
+            $this->__patient_schema->setParamLogic('or');
             request()->merge([
                 'search_name'           => request()->search_value,
                 'search_dob'            => request()->search_value,
