@@ -66,7 +66,9 @@ class PointOfSaleController extends EnvironmentController{
         $data['reference'] = $reference;
         $data['reference_type'] = $referenceType;
         request()->merge($data);
-        return $this->storePosTransaction();
+        $transaction = $this->storePosTransaction();
+        $this->elasticBillingIndexing($transaction['billing']['id']);
+        return $transaction;
     }
 
     public function delete(DeleteRequest $request){

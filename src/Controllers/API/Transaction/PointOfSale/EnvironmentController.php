@@ -3,6 +3,7 @@
 namespace Projects\WellmedGateway\Controllers\API\Transaction\PointOfSale;
 
 use Projects\WellmedGateway\Controllers\API\Transaction\EnvironmentController as EnvTransaction;
+use Projects\WellmedGateway\Jobs\ElasticJob;
 
 class EnvironmentController extends EnvTransaction{
     protected function getPosTransactionPaginate(?callable $callback = null){        
@@ -39,5 +40,23 @@ class EnvironmentController extends EnvTransaction{
             $this->commonConditional($query);
             $callback($query);
         })->storePosTransaction();
+    }
+
+    protected function elasticBillingIndexing(string $billingId){
+        $billing = $this->BillingModel();
+        $billing = $billing->with($billing->showUsingRelation())->findOrFail($billingId);
+        dispatch(new ElasticJob([
+            'type'  => 'BULK',
+            'datas' => [
+                [
+                    'index' => config('app.elasticsearch.indexes.billing.full_name'),
+                    'data'  => [
+                        json_decode(json_encode($billing->toShowApi()->resolve()),true)
+                    ]
+                ]
+            ]
+        ]))
+        ->onQueue('elasticsearch')
+        ->onConnection('rabbitmq');
     }
 }

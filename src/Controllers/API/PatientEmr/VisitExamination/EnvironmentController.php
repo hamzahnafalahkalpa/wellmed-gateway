@@ -3,6 +3,7 @@
 namespace Projects\WellmedGateway\Controllers\API\PatientEmr\VisitExamination;
 
 use Projects\WellmedGateway\Controllers\API\PatientEmr\EnvironmentController as EnvEnvironmentController;
+use Projects\WellmedGateway\Jobs\ElasticJob;
 
 class EnvironmentController extends EnvEnvironmentController
 {
@@ -76,9 +77,13 @@ class EnvironmentController extends EnvEnvironmentController
             $examination['pharmacy_type'] = config('module-examination.warehouse') ?? 'Room';
             request()->merge(['examination' => $examination]);
         }
-        return $this->__visit_examination_schema->conditionals(function($query) use ($callback){
+        $visit_examination = $this->__visit_examination_schema->conditionals(function($query) use ($callback){
             $this->commonConditional($query);
             $callback($query);
         })->storeVisitExamination();
+        if (isset($visit_examination['sign_off_at'])){
+
+        }
+        return $visit_examination;
     }
 }
