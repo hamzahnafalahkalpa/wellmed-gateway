@@ -15,4 +15,4 @@ ApiAccess::secure(function(){
     });
 });
 Route::post('api/add-tenant',[AddTenantController::class,'store'])->name('add-tenant.store');
-Route::get('api/xendit/paid',[XenditController::class,'index'])->name('api.xendit.paid');
+Route::post('api/xendit/paid',[XenditController::class,'store'])->name('api.xendit.paid');

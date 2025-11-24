@@ -6,7 +6,7 @@ use Projects\WellmedGateway\Controllers\API\ApiController;
 use Illuminate\Http\Request;
 
 class XenditController extends ApiController{
-    public function index(Request $request){
+    public function store(Request $request){
         \Log::channel('xendit')->info('Xendit paid callback', [
             'payload' => request()->all(),
             'headers' => request()->headers->all()
