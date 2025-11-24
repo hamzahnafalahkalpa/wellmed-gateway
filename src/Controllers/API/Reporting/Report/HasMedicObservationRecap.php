@@ -6,14 +6,14 @@ trait HasMedicObservationRecap{
     public function medicObservationRecap(){
         // $query_params 
         $response = &$this->__response;
-        $search = $this->__client->search([
+        $search = [
             'index' => config('app.elasticsearch.indexes.patient_illness.full_name'),
             'body'  => [
                 'from' => $response['from'],
                 'size' => $response['per_page']                
             ]
-        ]);
-                $response['filters'] = [
+        ];
+        $response['filters'] = [
             [
                 'label'          => 'Nama Diagnosis',
                 'key'            => 'disease_name',
@@ -55,6 +55,7 @@ trait HasMedicObservationRecap{
             ]
         ];
         $this->handleQueryParams($search,$response['filters']);
+        $search = $this->__client->search($search);
         $this->resolveForPaginate($response,$search);
         $response['columns'] = [
             ["key" => "name", "label" => "Nama Diagnosis"],

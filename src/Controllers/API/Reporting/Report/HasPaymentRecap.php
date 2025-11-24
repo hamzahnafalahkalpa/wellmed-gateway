@@ -6,14 +6,14 @@ trait HasPaymentRecap{
     public function paymentRecap(){
         // $query_params 
         $response = &$this->__response;
-        $search = $this->__client->search([
+        $search = [
             'index' => config('app.elasticsearch.indexes.billing.full_name'),
             'body'  => [
                 'from' => $response['from'],
                 'size' => $response['per_page']
             ]
-        ]);
-                $response['filters'] = [
+        ];
+        $response['filters'] = [
             [
             'label'          => 'Tanggal Laporan',
             'key'            => 'reported_at',
@@ -97,6 +97,7 @@ trait HasPaymentRecap{
             ]
         ];
         $this->handleQueryParams($search,$response['filters']);
+        $search = $this->__client->search($search);
         $this->resolveForPaginate($response,$search);
         $response['columns'] = [
             ["key" => "reported_at", "label" => "Tanggal Laporan"],

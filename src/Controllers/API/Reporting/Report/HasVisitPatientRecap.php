@@ -6,13 +6,13 @@ trait HasVisitPatientRecap{
     public function visitPatientRecap(){
         // $query_params 
         $response = &$this->__response;
-        $search = $this->__client->search([
+        $search = [
             'index' => config('app.elasticsearch.indexes.visit_patient.full_name'),
             'body'  => [
                 'from' => $response['from'],
                 'size' => $response['per_page']                
             ]
-        ]);
+        ];
         $response['filters'] = [
             [
                 'label'          => 'Tanggal Berkunjung',
@@ -133,6 +133,7 @@ trait HasVisitPatientRecap{
             ]
         ];
         $this->handleQueryParams($search,$response['filters']);
+        $search = $this->__client->search($search);
         $this->resolveForPaginate($response,$search);
         $response['columns'] = [
             ["key" => "visited_at", "label" => "Tanggal Berkunjung"],

@@ -6,13 +6,13 @@ trait HasDiagnosisRecap{
     public function diagnosisRecap(){
         // $query_params 
         $response = &$this->__response;
-        $search = $this->__client->search([
+        $search = [
             'index' => config('app.elasticsearch.indexes.patient_illness.full_name'),
             'body'  => [
                 'from' => $response['from'],
                 'size' => $response['per_page']
             ]
-        ]);
+        ];
         $response['filters'] = [
             [
                 'label'          => 'Nama Diagnosis',
@@ -55,6 +55,7 @@ trait HasDiagnosisRecap{
             ]
         ];
         $this->handleQueryParams($search,$response['filters']);
+        $search = $this->__client->search($search);
         $this->resolveForPaginate($response,$search);
         $response['columns'] = [
             ["key" => "name", "label" => "Nama Diagnosis"],
