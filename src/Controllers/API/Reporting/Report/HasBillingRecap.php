@@ -6,35 +6,13 @@ trait HasBillingRecap{
     public function billingRecap(){
         // $query_params 
         $response = &$this->__response;
-        $patients = $this->__client->search([
+        $search = $this->__client->search([
             'index' => config('app.elasticsearch.indexes.billing.full_name'),
             'body'  => [
                 'from' => $response['from'],
                 'size' => $response['per_page']
-                // 'query' => [
-                //     "bool" => [
-                //         "must" => [
-                //             [
-                //                 "wildcard" => [
-                //                     "name" => "hamzah*"
-                //                 ]
-                //             ]
-                //         ]
-                //     ]
-                // ]
             ]
         ]);
-        $this->resolveForPaginate($response,$patients);
-        $response['columns'] = [
-            ["key" => "reported_at", "label" => "Tanggal Laporan"],
-            ["key" => "billing_code", "label" => "Kode Billing"],
-            ["key" => "has_transaction.consument.reference.medical_record", "label" => "No RM"],
-            ["key" => "has_transaction.consument.reference.people.card_identity.nik", "label" => "NIK"],
-            ["key" => "has_transaction.consument.name", "label" => "Nama Pasien"],
-            ["key" => "author.name", "label" => "Petugas"],
-            ["key" => "amount", "label" => "Total Tagihan"],
-            ["key" => "debt", "label" => "Sisa Tagihan"]
-        ];
         $response['filters'] = [
             [
             'label'          => 'Tanggal Laporan',
@@ -118,6 +96,19 @@ trait HasBillingRecap{
             'options'        => []
             ]
         ];
+        $this->handleQueryParams($search,$response['filters']);
+        $this->resolveForPaginate($response,$search);
+        $response['columns'] = [
+            ["key" => "reported_at", "label" => "Tanggal Laporan"],
+            ["key" => "billing_code", "label" => "Kode Billing"],
+            ["key" => "has_transaction.consument.reference.medical_record", "label" => "No RM"],
+            ["key" => "has_transaction.consument.reference.people.card_identity.nik", "label" => "NIK"],
+            ["key" => "has_transaction.consument.name", "label" => "Nama Pasien"],
+            ["key" => "author.name", "label" => "Petugas"],
+            ["key" => "amount", "label" => "Total Tagihan"],
+            ["key" => "debt", "label" => "Sisa Tagihan"]
+        ];
+
         return $response;
     }
 }

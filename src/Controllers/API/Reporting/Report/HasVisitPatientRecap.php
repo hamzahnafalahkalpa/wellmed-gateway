@@ -6,40 +6,13 @@ trait HasVisitPatientRecap{
     public function visitPatientRecap(){
         // $query_params 
         $response = &$this->__response;
-        $patients = $this->__client->search([
+        $search = $this->__client->search([
             'index' => config('app.elasticsearch.indexes.visit_patient.full_name'),
             'body'  => [
                 'from' => $response['from'],
-                'size' => $response['per_page']
-                // 'query' => [
-                //     "bool" => [
-                //         "must" => [
-                //             [
-                //                 "wildcard" => [
-                //                     "name" => "hamzah*"
-                //                 ]
-                //             ]
-                //         ]
-                //     ]
-                // ]
+                'size' => $response['per_page']                
             ]
         ]);
-        $this->resolveForPaginate($response,$patients);
-        $response['columns'] = [
-            ["key" => "visited_at", "label" => "Tanggal Berkunjung"],
-            ["key" => "visit_code", "label" => "Kode Kunjungan"],
-            ["key" => "practitioner_evaluation.name", "label" => "Petugas Pendaftaran"],
-            ["key" => "medical_record", "label" => "No RM"],
-            ["key" => "people.card_identity.nik", "label" => "NIK"],
-            ["key" => "name", "label" => "Nama Pasien"],
-            ["key" => "patient_type.name", "label" => "Jenis Pasien"],
-            ["key" => "people.phone_1", "label" => "Kontak 1"],
-            ["key" => "people.phone_2", "label" => "Kontak 2"],
-            ["key" => "people.age", "label" => "Usia"],
-            ["key" => "people.gender", "label" => "Jenis Kelamin"],
-            ["key" => "people.pob", "label" => "Tempat Lahir"],
-            ["key" => "people.dob", "label" => "Tanggal Lahir"]
-        ];
         $response['filters'] = [
             [
                 'label'          => 'Tanggal Berkunjung',
@@ -158,6 +131,23 @@ trait HasVisitPatientRecap{
                 'attribute'      => null,
                 'options'        => []
             ]
+        ];
+        $this->handleQueryParams($search,$response['filters']);
+        $this->resolveForPaginate($response,$search);
+        $response['columns'] = [
+            ["key" => "visited_at", "label" => "Tanggal Berkunjung"],
+            ["key" => "visit_code", "label" => "Kode Kunjungan"],
+            ["key" => "practitioner_evaluation.name", "label" => "Petugas Pendaftaran"],
+            ["key" => "patient.medical_record", "label" => "No RM"],
+            ["key" => "patient.people.card_identity.nik", "label" => "NIK"],
+            ["key" => "patient.people.name", "label" => "Nama Pasien"],
+            ["key" => "patient_type.name", "label" => "Jenis Pasien"],
+            ["key" => "patient.people.phone_1", "label" => "Kontak 1"],
+            ["key" => "patient.people.phone_2", "label" => "Kontak 2"],
+            ["key" => "patient.people.age", "label" => "Usia"],
+            ["key" => "patient.people.gender", "label" => "Jenis Kelamin"],
+            ["key" => "patient.people.pob", "label" => "Tempat Lahir"],
+            ["key" => "patient.people.dob", "label" => "Tanggal Lahir"]
         ];
         return $response;
     }

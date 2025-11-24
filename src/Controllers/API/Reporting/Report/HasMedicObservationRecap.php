@@ -6,37 +6,14 @@ trait HasMedicObservationRecap{
     public function medicObservationRecap(){
         // $query_params 
         $response = &$this->__response;
-        $patients = $this->__client->search([
+        $search = $this->__client->search([
             'index' => config('app.elasticsearch.indexes.patient_illness.full_name'),
             'body'  => [
                 'from' => $response['from'],
-                'size' => $response['per_page']
-                // 'query' => [
-                //     "bool" => [
-                //         "must" => [
-                //             [
-                //                 "wildcard" => [
-                //                     "name" => "hamzah*"
-                //                 ]
-                //             ]
-                //         ]
-                //     ]
-                // ]
+                'size' => $response['per_page']                
             ]
         ]);
-        $this->resolveForPaginate($response,$patients);
-        $response['columns'] = [
-            ["key" => "name", "label" => "Nama Diagnosis"],
-            ["key" => "disease.code", "label" => "Kode Diagnosis"],
-            ["key" => "classification_disease.name", "label" => "Klasifikasi Penyakit"],
-            ["key" => "classification_disease.code", "label" => "Kode Klasifikasi Penyakit"],
-            ["key" => "patient.name", "label" => "Nama Pasien"],
-            ["key" => "patient.people.sex", "label" => "Jenis Kelamin"],
-            ["key" => "patient.people.dob", "label" => "Tanggal Lahir"],
-            // ["key" => "reference.practitioner_evaluations", "label" => "Dokter"],
-            ["key" => "created_at", "label" => "Tanggal Dibuat"]
-        ];
-        $response['filters'] = [
+                $response['filters'] = [
             [
                 'label'          => 'Nama Diagnosis',
                 'key'            => 'disease_name',
@@ -77,6 +54,20 @@ trait HasMedicObservationRecap{
                 'options'        => []
             ]
         ];
+        $this->handleQueryParams($search,$response['filters']);
+        $this->resolveForPaginate($response,$search);
+        $response['columns'] = [
+            ["key" => "name", "label" => "Nama Diagnosis"],
+            ["key" => "disease.code", "label" => "Kode Diagnosis"],
+            ["key" => "classification_disease.name", "label" => "Klasifikasi Penyakit"],
+            ["key" => "classification_disease.code", "label" => "Kode Klasifikasi Penyakit"],
+            ["key" => "patient.name", "label" => "Nama Pasien"],
+            ["key" => "patient.people.sex", "label" => "Jenis Kelamin"],
+            ["key" => "patient.people.dob", "label" => "Tanggal Lahir"],
+            // ["key" => "reference.practitioner_evaluations", "label" => "Dokter"],
+            ["key" => "created_at", "label" => "Tanggal Dibuat"]
+        ];
+
         return $response;
     }
 }

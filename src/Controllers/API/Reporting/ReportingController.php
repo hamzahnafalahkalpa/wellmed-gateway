@@ -70,4 +70,35 @@ class ReportingController extends ApiController{
         }
         $paginate['last_page'] = ceil($paginate['total'] / $paginate['per_page']);
     }
+
+    protected function handleQueryParams(array &$search, array $filters){
+        $q = request()->all();
+        if (isset($q) && count($q) > 0){
+            $keys = array_column($filters,'key');
+            $is_any_filter = false;
+            $filters = [];
+            foreach ($q as $key => $value) {
+                if (in_array($key, $keys) && !empty($value)) {
+                    $is_any_filter = true;
+                    $filters[$key] = $value;
+                }
+            }
+            if ($is_any_filter) {
+                $search['body']['query'] = [];
+                $search['body']['query']['bool'] = [];
+                $bool = &$search['body']['query']['bool'];
+                $bool['must'] = [];
+    
+                foreach ($filters as $filter_key => $value) {
+                    $bool['must'][] = [
+                        'query_string' => [
+                            'query' => '*'.Str::lower($value).'*',
+                            'fields' => [$filter_key],
+                            'analyze_wildcard' => true
+                        ]
+                    ];
+                }
+            }
+        }
+    }
 }
