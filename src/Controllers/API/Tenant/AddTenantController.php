@@ -11,14 +11,23 @@ class AddTenantController extends ApiController{
         try {
             $data = request()->all();
             // $data = [
-            //     'workspace_id' => '01kawvy0cngm65jdqj61zvzpcb',
-            //     'workspace_name' => 'Wellmed h 9',
+            //     'workspace_id' => '01kax74158mp5hta48kwt60ffh',
+            //     'workspace_name' => 'vvvvv',
             //     'product_label' => 'LITE',
             //     'group_tenant_id' => 6,
-            //     'app_tenant_id' => 5
+            //     'app_tenant_id' => 5,
+            //     'admin' => [
+            //         "id"=> null,
+            //         "name"=> "admin_vvv",
+            //         "username"=> "vvvvad",
+            //         "email"=> "adminvvv@mail.com",
+            //         "password"=> "password",
+            //         "password_confirmation"=> "password"
+            //     ]
             // ];
             dispatch(new AddTenantJob($data))->onQueue('installation')->onConnection('rabbitmq');
         } catch (\Throwable $th) {
+            dd($th->getMessage());
             throw $th;
         }
         return response()->json([
