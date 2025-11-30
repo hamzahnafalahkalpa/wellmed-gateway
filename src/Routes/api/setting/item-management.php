@@ -1,6 +1,6 @@
 <?php
 
-use Subagadigitalmedika\ModuleItem\Contracts\Schemas\SupplyCategory;
+use Hanafalah\ModuleItem\Contracts\Schemas\SupplyCategory;
 use Illuminate\Support\Facades\Route;
 use Projects\WellmedGateway\Controllers\API\Setting\{
     BrandController,
