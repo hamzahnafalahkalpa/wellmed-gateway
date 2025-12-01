@@ -21,7 +21,6 @@ class EnvironmentController extends EnvEnvironmentController
                 'patient_id' => $visit_examination->patient_id
             ]);
         }
-
         $data = $this->__assessment_schema->showAssessment();
         if(!isset($data)) {
             $model = $this->{$morph.'Model'}();
