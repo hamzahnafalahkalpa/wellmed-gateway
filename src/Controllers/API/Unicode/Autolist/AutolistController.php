@@ -184,6 +184,8 @@ class AutolistController extends ApiController{
                             'id'         => $result['id'],
                             'ihs_number' => $result['card_identity']['ihs_number'] ?? null
                         ];
+                    }else{
+                        
                     }
                     return $result;
                 }else{

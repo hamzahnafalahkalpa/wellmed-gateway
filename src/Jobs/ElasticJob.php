@@ -27,7 +27,10 @@ class ElasticJob implements ShouldQueue
      */
     public function handle(): void
     {
-        JobRequest::set($this->data);       
+        JobRequest::set($this->data);  
+        if (config('app.elasticsearch.enabled', false) == false) {
+            return;
+        }
         $hosts = config('app.elasticsearch.hosts','localhost:9002');
         $this->client = ClientBuilder::create()->setHosts($hosts)
                         ->setApiKey(

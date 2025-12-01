@@ -1,12 +1,12 @@
 <?php
 
-namespace Projects\WellmedGateway\Requests\API\Setting\Role;
+namespace Projects\WellmedGateway\Requests\API\Setting\SatuSehat\PatientIntegration;
 
 use Hanafalah\LaravelSupport\Requests\FormRequest;
 
 class ShowRequest extends FormRequest
 {
-    protected $__entity = 'Role';
+    protected $__entity = 'PatientIntegration';
 
     /**
      * Determine if the user is authorized to make this request.
@@ -22,8 +22,7 @@ class ShowRequest extends FormRequest
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
     public function rules(): array
-    {  
-        return [
-        ];
+    {
+        return [];
     }
 }

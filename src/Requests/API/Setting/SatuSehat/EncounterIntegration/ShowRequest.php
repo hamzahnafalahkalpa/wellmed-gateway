@@ -1,12 +1,12 @@
 <?php
 
-namespace Projects\WellmedGateway\Requests\API\Setting\Role;
+namespace Projects\WellmedGateway\Requests\API\Setting\SatuSehat\EncounterIntegration;
 
 use Hanafalah\LaravelSupport\Requests\FormRequest;
 
-class StoreRequest extends FormRequest
+class ShowRequest extends FormRequest
 {
-    protected $__entity = 'Role';
+    protected $__entity = 'EncounterIntegration';
 
     /**
      * Determine if the user is authorized to make this request.
@@ -22,10 +22,7 @@ class StoreRequest extends FormRequest
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
     public function rules(): array
-    {  
-        return [
-            'id'   => ['nullable',$this->idValidation('Role')],
-            'name' => ['required','string']
-        ];
+    {
+        return [];
     }
 }
