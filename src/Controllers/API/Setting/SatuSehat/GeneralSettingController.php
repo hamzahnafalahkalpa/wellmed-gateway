@@ -29,6 +29,18 @@ class GeneralSettingController extends ApiController{
         $locations     = $datas['locations'];
         $practitioners = $datas['practitioners'];
         $datas = [];
+        if (isset($organization)) {
+            $tenant = tenancy()->tenant;
+            $workspace = $tenant->reference;
+            $integration = $workspace->integration;
+            $satu_sehat = &$integration['satu_sehat']['general'];
+            $satu_sehat['organization_id'] = $organization['organization_id'];
+            $satu_sehat['client_id'] = $organization['client_id'];
+            $satu_sehat['client_secret'] = $organization['client_secret'];
+            $workspace->setAttribute('integration',$integration);
+            $workspace->save();
+        }
+
         foreach ($locations as $location) {
             $datas[] = [
                 "id" => $location['id'] ?? null,
@@ -37,6 +49,9 @@ class GeneralSettingController extends ApiController{
                 'reference_id' => $location['reference_id'],
                 'method' => 'GET'
             ];
+            $room = $this->RoomModel()->findOrFail($location['reference_id']);
+            $room->ihs_number = $location['ihs_number'];
+            $room->save();
         }
         foreach ($practitioners as $practitioner) {
             $datas[] = [
@@ -47,6 +62,11 @@ class GeneralSettingController extends ApiController{
                 'method' => 'GET',
                 'env_type' => config('satu-sehat.environment.env_type'),
             ];
+            $employee = $this->EmployeeModel()->findOrFail($practitioner['reference_id']);
+            $card_identity = $employee->card_identity;
+            $card_identity['ihs_number'] = $practitioner['ihs_number'];
+            $employee->setAttribute('card_identity',$card_identity);
+            $employee->save();
         }
         request()->replace($datas);
         $collections = $this->__schema->storeMultipleGeneralSetting($datas);
