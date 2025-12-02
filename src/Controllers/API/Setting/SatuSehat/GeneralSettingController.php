@@ -33,6 +33,7 @@ class GeneralSettingController extends ApiController{
                         'id' => null,
                         'reference_type' => 'Room',
                         'reference_id' => $room->id,
+                        'name' => $room->name,
                         'ihs_number' => $room->ihs_number,
                     ];
                 }
@@ -47,6 +48,7 @@ class GeneralSettingController extends ApiController{
                         'id' => null,
                         'reference_type' => 'Employee',
                         'reference_id' => $employee->id,
+                        'name' => $employee->name,
                         'ihs_number' => $card_identity['ihs_number'] ?? null,
                     ];
                 }
