@@ -16,7 +16,43 @@ class GeneralSettingController extends ApiController{
     }
 
     public function index(ViewRequest $request){
-        return $this->__schema->viewGeneralSettingList();
+        $workspace = $this->getWorkspace();
+        $integration = $workspace->integration;
+        $satu_sehat = $integration['satu_sehat']['general'] ?? [];
+        return [
+            'organization' => [
+                'organization_id' => $satu_sehat['organization_id'] ?? null,
+                'client_id' => $satu_sehat['client_id'] ?? null,
+                'client_secret' => $satu_sehat['client_secret'] ?? null,
+            ],
+            'locations' => call_user_func(function(){
+                $rooms = $this->RoomModel()->get();
+                $room_datas = [];
+                foreach ($rooms as $room) {
+                    $room_datas[] = [
+                        'id' => null,
+                        'reference_type' => 'Room',
+                        'reference_id' => $room->id,
+                        'ihs_number' => $room->ihs_number,
+                    ];
+                }
+                return $room_datas;
+            }),
+            'practitioners' => call_user_func(function(){
+                $employees = $this->EmployeeModel()->get();
+                $employee_datas = [];
+                foreach ($employees as $employee) {
+                    $card_identity = $employee->card_identity;
+                    $employee_datas[] = [
+                        'id' => null,
+                        'reference_type' => 'Employee',
+                        'reference_id' => $employee->id,
+                        'ihs_number' => $card_identity['ihs_number'] ?? null,
+                    ];
+                }
+                return $employee_datas;
+            }),
+        ];
     }
 
     public function show(ShowRequest $request){
@@ -30,8 +66,7 @@ class GeneralSettingController extends ApiController{
         $practitioners = $datas['practitioners'];
         $datas = [];
         if (isset($organization)) {
-            $tenant = tenancy()->tenant;
-            $workspace = $tenant->reference;
+            $workspace = $this->getWorkspace();
             $integration = $workspace->integration;
             $satu_sehat = &$integration['satu_sehat']['general'];
             $satu_sehat['organization_id'] = $organization['organization_id'];
@@ -75,5 +110,10 @@ class GeneralSettingController extends ApiController{
 
     public function destroy(DeleteRequest $request){
         return $this->__schema->deleteGeneralSetting();
+    }
+
+    private function getWorkspace(){
+        $tenant = tenancy()->tenant;
+        return $tenant->reference;
     }
 }
