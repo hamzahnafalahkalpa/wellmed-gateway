@@ -77,7 +77,7 @@ class AutolistController extends ApiController{
                             MedicServiceLabel::VERLOS_KAMER->value,
                             MedicServiceLabel::EMERGENCY_UNIT->value,
                             MedicServiceLabel::TREATMENT_ROOM->value,
-                            'UMUM', 'ORTHOPEDI', 'SUNAT', 'KECANTIKAN', 'MATA', 'THT', 'INTERNIS', 'GIGI & MULUT', 'KIA', 'LANSIA', 'ADMIN', 'VACCINE', 'MTBS'
+                            'UMUM', 'ORTHOPEDI', 'SUNAT', 'KECANTIKAN', 'MATA', 'THT', 'INTERNIS', 'GIGI & MULUT', 'KIA', 'ADMIN', 'VACCINE'
                         ]);
                     })->when(isset(request()->exclude_id),function($query){
                         $ids = $this->mustArray(request()->exclude_id);
