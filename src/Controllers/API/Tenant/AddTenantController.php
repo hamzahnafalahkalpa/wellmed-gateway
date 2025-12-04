@@ -11,16 +11,16 @@ class AddTenantController extends ApiController{
         try {
             $data = request()->all();
             // $data = [
-            //     'workspace_id' => '01kax74158mp5hta48kwt60ffh',
-            //     'workspace_name' => 'vvvvv',
+            //     'workspace_id' => '01kbk9kde1ap43xzmrw87qys8s',
+            //     'workspace_name' => 'Klinik Wellmed',
             //     'product_label' => 'LITE',
-            //     'group_tenant_id' => 6,
-            //     'app_tenant_id' => 5,
+            //     'group_tenant_id' => 3,
+            //     'app_tenant_id' => 2,
             //     'admin' => [
             //         "id"=> null,
-            //         "name"=> "admin_vvv",
-            //         "username"=> "vvvvad",
-            //         "email"=> "adminvvv@mail.com",
+            //         "name"=> "admin_wellmed",
+            //         "username"=> "admin_wellmed",
+            //         "email"=> "admin_wellmed@mail.com",
             //         "password"=> "password",
             //         "password_confirmation"=> "password"
             //     ]
