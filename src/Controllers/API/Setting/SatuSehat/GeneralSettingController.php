@@ -63,9 +63,9 @@ class GeneralSettingController extends ApiController{
 
     public function store(StoreRequest $request){
         $datas = request()->all();
-        $organization  = $datas['organization'];
-        $locations     = $datas['locations'];
-        $practitioners = $datas['practitioners'];
+        $organization  = $datas['organization'] ?? null;
+        $locations     = $datas['locations'] ?? null;
+        $practitioners = $datas['practitioners'] ?? null;
         $datas = [];
         if (isset($organization)) {
             $workspace = $this->getWorkspace();
@@ -78,32 +78,36 @@ class GeneralSettingController extends ApiController{
             $workspace->save();
         }
 
-        foreach ($locations as $location) {
-            $datas[] = [
-                "id" => $location['id'] ?? null,
-                'name' => 'GeneralSettingLocation',
-                'reference_type' => 'Room',
-                'reference_id' => $location['reference_id'],
-                'method' => 'GET'
-            ];
-            $room = $this->RoomModel()->findOrFail($location['reference_id']);
-            $room->ihs_number = $location['ihs_number'];
-            $room->save();
+        if (isset($locations)) {
+            foreach ($locations as $location) {
+                $datas[] = [
+                    "id" => $location['id'] ?? null,
+                    'name' => 'GeneralSettingLocation',
+                    'reference_type' => 'Room',
+                    'reference_id' => $location['reference_id'],
+                    'method' => 'GET'
+                ];
+                $room = $this->RoomModel()->findOrFail($location['reference_id']);
+                $room->ihs_number = $location['ihs_number'];
+                $room->save();
+            }
         }
-        foreach ($practitioners as $practitioner) {
-            $datas[] = [
-                "id" => $practitioner['id'] ?? null,
-                'name' => 'GeneralSettingPractitioner',
-                'reference_type' => 'Employee',
-                'reference_id' => $practitioner['reference_id'],
-                'method' => 'GET',
-                'env_type' => config('satu-sehat.environment.env_type'),
-            ];
-            $employee = $this->EmployeeModel()->findOrFail($practitioner['reference_id']);
-            $card_identity = $employee->card_identity;
-            $card_identity['ihs_number'] = $practitioner['ihs_number'];
-            $employee->setAttribute('card_identity',$card_identity);
-            $employee->save();
+        if (isset($practitioners)) {
+            foreach ($practitioners as $practitioner) {
+                $datas[] = [
+                    "id" => $practitioner['id'] ?? null,
+                    'name' => 'GeneralSettingPractitioner',
+                    'reference_type' => 'Employee',
+                    'reference_id' => $practitioner['reference_id'],
+                    'method' => 'GET',
+                    'env_type' => config('satu-sehat.environment.env_type'),
+                ];
+                $employee = $this->EmployeeModel()->findOrFail($practitioner['reference_id']);
+                $card_identity = $employee->card_identity;
+                $card_identity['ihs_number'] = $practitioner['ihs_number'];
+                $employee->setAttribute('card_identity',$card_identity);
+                $employee->save();
+            }
         }
         request()->replace($datas);
         $collections = $this->__schema->storeMultipleGeneralSetting($datas);
