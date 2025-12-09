@@ -4,13 +4,14 @@ namespace Projects\WellmedGateway\Controllers\API\Unicode\Autolist;
 
 use Hanafalah\LaravelHasProps\Models\Scopes\HasCurrentScope;
 use Hanafalah\LaravelSupport\Concerns\Support\HasCache;
+use Hanafalah\LaravelSupport\Concerns\Support\HasRequestData;
 use Illuminate\Http\Request;
 use Projects\WellmedGateway\Controllers\API\ApiController;
 use Illuminate\Support\Str;
 use Hanafalah\ModuleMedicService\Enums\Label as MedicServiceLabel;
 
 class AutolistController extends ApiController{
-    use HasCache;
+    use HasCache, HasRequestData;
 
     protected $__onlies = [
     ];
@@ -20,11 +21,13 @@ class AutolistController extends ApiController{
     ];
 
     public function index(Request $request){
-        request()->merge([ 
-            'search_name'  => request()->search_name ?? request()->search_value,
-            'search_value' => null
-        ]);
         $morph = Str::studly(request()->morph);
+        if (!in_array($morph,['Patient'])){
+            request()->merge([ 
+                'search_name'  => request()->search_name ?? request()->search_value,
+                'search_value' => null
+            ]);
+        }
         switch ($morph) {
             case 'Unicode':
                 $datas = $this->cacheWhen(true,[
@@ -178,14 +181,31 @@ class AutolistController extends ApiController{
                         break;
                     }
                     $result = $this->callAutolist($morph);
-                    if (count($result) > 0){
-                        $result = $result[0];
+                    if (count($result['data']) > 0){
+                        $result = $result['data'][0];
                         return [
                             'id'         => $result['id'],
                             'ihs_number' => $result['card_identity']['ihs_number'] ?? null
                         ];
                     }else{
-                        
+                        request()->replace([
+                            'params' => [
+                                $credential => request()->{'search_'.$credential}
+                            ]
+                        ]);
+                        $result = app(config('app.contracts.PatientSatuSehat'))->viewPatientSatuSehatList();
+                        if (isset($result) && isset($result['entry']) && count($result['entry']) > 0){
+                            $result = $result['entry'][0]['resource'];
+                            return [
+                                'id'         => null,
+                                'ihs_number' => $result['id']
+                            ];
+                        }else{
+                            return [
+                                'id'         => null,
+                                'ihs_number' => null
+                            ];
+                        }
                     }
                     return $result;
                 }else{
