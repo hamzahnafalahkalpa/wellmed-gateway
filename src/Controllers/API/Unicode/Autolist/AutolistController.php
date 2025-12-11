@@ -181,7 +181,7 @@ class AutolistController extends ApiController{
                         break;
                     }
                     $result = $this->callAutolist($morph);
-                    if (count($result['data']) > 0){
+                    if (isset($result['data']) && count($result['data']) > 0){
                         $result = $result['data'][0];
                         return [
                             'id'         => $result['id'],
