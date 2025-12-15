@@ -6,7 +6,7 @@ use Projects\WellmedGateway\Jobs\ElasticJob;
 use Projects\WellmedGateway\Requests\API\PatientEmr\Patient\{
     ShowRequest, ViewRequest, DeleteRequest, StoreRequest
 };
-use Projects\WellmedGateway\Schemas\Elastic;
+use Illuminate\Http\Request;
 
 class PatientController extends EnvironmentController{
 
@@ -101,5 +101,24 @@ class PatientController extends EnvironmentController{
     public function destroy(DeleteRequest $request){
         $this->userAttempt();
         return $this->__patient_schema->deletePatient();
+    }
+
+    public function import(Request $request){
+        $this->userAttempt();
+        return $this->__patient_schema->import('Patient')->handle([
+            'name' => 'Import Pasien',
+            'reference_type' => 'Workspace',
+            'reference_id' => $this->global_workspace->getKey(),
+            'paths' => [
+                $request->file('file')
+            ]
+        ]);
+    }
+
+    public function downloadTemplate(Request $request){
+        return redirect()->away(
+            backbone_asset('assets/patient-data.xlsx')
+        );
+        return response()->download(backbone_asset('assets/patient-data.xlsx'));
     }
 }

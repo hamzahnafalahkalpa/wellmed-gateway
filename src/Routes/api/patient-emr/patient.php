@@ -32,6 +32,13 @@ use Projects\WellmedGateway\Controllers\API\PatientEmr\Patient\VisitExamination\
 |
 */
 
+Route::group([
+    'prefix' => '/patient/import',
+    'as'     => 'patient.',
+],function(){
+    Route::post('/',[PatientController::class,'import'])->name('import');
+    Route::get('/template',[PatientController::class,'downloadTemplate'])->name('import.template');
+});
 Route::apiResource('/patient',PatientController::class)->parameters(['patient' => 'id']);
 Route::group([
     "prefix" => "/patient/{patient_id}",
