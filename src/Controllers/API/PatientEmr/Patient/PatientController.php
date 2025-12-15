@@ -109,6 +109,8 @@ class PatientController extends EnvironmentController{
             'name' => 'Import Pasien',
             'reference_type' => 'Workspace',
             'reference_id' => $this->global_workspace->getKey(),
+            'author_type' => 'Employee',
+            'author_id' => $this->global_employee->getKey(),
             'paths' => [
                 $request->file('file')
             ]
