@@ -27,25 +27,6 @@ class EnvironmentController extends EnvEnvironmentController
             $data  = (\method_exists($model,'getExams')) ? $model->getExams() : null;
         }
         return $data;
-
-        $response = [
-            'visit_examination_id' => request()->visit_examination_id,
-        ];
-        $exam_type = request()->exam_type;
-        switch ($exam_type) {
-            case 'medical-support':
-            case 'prescription':
-            case 'examination':
-                $response[$exam_type] = [
-                    $morph => [
-                        'data' => $data
-                    ]
-                ];
-            break;
-            case 'treatments':
-                $response[$exam_type] = $data;
-            break;
-        }
     }
 
     protected function storeAssessment(){

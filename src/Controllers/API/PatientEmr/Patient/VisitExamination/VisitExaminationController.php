@@ -33,6 +33,6 @@ class VisitExaminationController extends EnvironmentController
         ];
         request()->replace($visit_patient);
         $visit_patient = $this->storeVisitPatient();
-        return $this->__visit_examination_schema->showVisitExamination($this->VisitExaminationModel()->findOrFail($visit_patient['visit_registration']['visit_examination']['id']));
+        return $this->__visit_examination_schema->showVisitExamination($this->VisitExaminationModel()->findOrFail($visit_patient['visit_registrations'][0]['visit_examination']['id']));
     }
 }

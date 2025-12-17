@@ -111,7 +111,7 @@ class PatientController extends EnvironmentController{
             'reference_id' => $this->global_workspace->getKey(),
             'author_type' => 'Employee',
             'author_id' => $this->global_employee->getKey(),
-            'paths' => [
+            'files' => [
                 $request->file('file')
             ]
         ]);
