@@ -12,6 +12,7 @@ use Hanafalah\ModulePatient\Contracts\Schemas\{
 };
 use Projects\WellmedBackbone\Contracts\Schemas\ModulePatient\Patient;
 use Hanafalah\ModulePharmacy\Contracts\Schemas\PharmacySale;
+use Hanafalah\ModuleSupport\Contracts\Schemas\Support;
 use Projects\WellmedBackbone\Contracts\Schemas\ModulePatient\PractitionerEvaluation;
 use Projects\WellmedGateway\Controllers\API\ApiController as ApiBaseController;
 use Projects\WellmedGateway\Jobs\ElasticJob;
@@ -27,7 +28,8 @@ class EnvironmentController extends ApiBaseController{
         protected PractitionerEvaluation $__practitioner_evaluation_schema,
         protected Referral $__referral_schema,
         protected Assessment $__assessment_schema,
-        protected PharmacySale $__pharmacy_sale_schema
+        protected PharmacySale $__pharmacy_sale_schema,
+        protected Support $__support_schema
     )
     {
         parent::__construct();   

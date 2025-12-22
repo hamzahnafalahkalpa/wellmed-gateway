@@ -36,7 +36,10 @@ Route::group([
     'prefix' => '/patient/import',
     'as'     => 'patient.',
 ],function(){
-    Route::post('/',[PatientController::class,'import'])->name('import');
+    Route::post('/init',[PatientController::class,'init'])->name('init');
+    Route::post('/chunk',[PatientController::class,'uploadChunk'])->name('chunk');
+    Route::post('/process',[PatientController::class,'import'])->name('import');
+    Route::post('/complete',[PatientController::class,'uploadComplete'])->name('import.complete');
     Route::get('/template',[PatientController::class,'downloadTemplate'])->name('import.template');
 });
 Route::apiResource('/patient',PatientController::class)->parameters(['patient' => 'id']);

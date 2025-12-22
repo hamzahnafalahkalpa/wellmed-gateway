@@ -7,6 +7,10 @@ use Projects\WellmedGateway\Requests\API\PatientEmr\Patient\{
     ShowRequest, ViewRequest, DeleteRequest, StoreRequest
 };
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Aws\S3\S3Client;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Http;
 
 class PatientController extends EnvironmentController{
 
@@ -103,18 +107,122 @@ class PatientController extends EnvironmentController{
         return $this->__patient_schema->deletePatient();
     }
 
-    public function import(Request $request){
+    public function init(Request $request){
         $this->userAttempt();
-        return $this->__patient_schema->import('Patient')->handle([
+        request()->merge([
             'name' => 'Import Pasien',
             'reference_type' => 'Workspace',
             'reference_id' => $this->global_workspace->getKey(),
             'author_type' => 'Employee',
             'author_id' => $this->global_employee->getKey(),
+        ]);
+        if (isset(request()->total_size)){
+            request()->merge([
+                'chunk_size' => 5 * 1024 * 1024, //10 MB
+                'name' => 'Upload file '.request()->filename,
+                'is_chunk' => true
+            ]);
+        }
+
+        if (isset(request()->is_presigned) && request()->is_presigned){
+            $s3Client = new S3Client([
+                'version'     => 'latest',
+                'region'      => config('filesystems.disks.s3.region'),
+                'credentials' => [
+                    'key'    => config('filesystems.disks.s3.key'),
+                    'secret' => config('filesystems.disks.s3.secret'),
+                ],
+            ]);
+
+            $bucket = config('filesystems.disks.s3.bucket');
+            $uuid    = Str::orderedUuid()->toString();
+            $key     = "support/.chunks/{$uuid}/".request()->filename;
+            $target_key = "support/{$uuid}/".request()->filename;
+
+            $result = $s3Client->createMultipartUpload([
+                'Bucket' => $bucket,
+                // 'Key'    => $key,
+                'Key'    => $target_key,
+                'ACL'    => 'private'
+            ]);
+
+            $uploadId = $result['UploadId'];
+            $totalSize   = (int) request()->total_size;
+            $chunkSize   = (int) request()->chunk_size;
+            $totalChunks = (int) ceil($totalSize / $chunkSize);
+            $chunks = [];
+            for ($partNumber = 1; $partNumber <= $totalChunks; $partNumber++) {
+                $command = $s3Client->getCommand('UploadPart', [
+                    'Bucket'     => $bucket,
+                    'Key'        => $target_key,
+                    'UploadId'   => $uploadId,
+                    'PartNumber' => $partNumber,
+                ]);
+
+                $presignedRequest = $s3Client->createPresignedRequest($command, '+1 hour');
+                $chunks[] = [
+                    'part_number' => $partNumber,
+                    'key'         => $target_key,
+                    'url'         => (string) $presignedRequest->getUri(),
+                ];
+            }
+
+            request()->merge([
+                'upload_id'    => $uploadId,
+                'target_path'  => $target_key,
+                'chunk_path'  => $key,
+                'is_presigned' => true,
+                'chunks'      => $chunks,
+            ]);
+        }
+        return $this->__support_schema->storeSupport();
+    }
+    
+    public function uploadComplete(){
+        $support = $this->SupportModel()->findOrFail(request()->import_id);
+
+        $etags = request()->etags;
+        $s3Client = new S3Client([
+            'version' => 'latest',
+            'region' => config('filesystems.disks.s3.region'),
+            'credentials' => [
+                'key'    => config('filesystems.disks.s3.key'),
+                'secret' => config('filesystems.disks.s3.secret'),
+            ],
+        ]);
+
+        $parts = [];
+        foreach ($etags as $partNumber => $etag) {
+            $parts[] = [
+                'ETag' => trim($etag, '"'), // hapus tanda kutip
+                'PartNumber' => (int) $partNumber + 1, // partNumber dimulai dari 1
+            ];
+        }
+        $bucket = config('filesystems.disks.s3.bucket');
+        $result = $s3Client->completeMultipartUpload([
+            'Bucket' => $bucket,
+            'Key'    => $support->target_path,       // path file final di S3
+            'UploadId' => $support->upload_id,
+            'MultipartUpload' => [
+                'Parts' => $parts
+            ],
+        ]);
+        return response()->json([
+            'message' => 'Upload completed successfully.',
+            'file_url' => $result['Location'],
+        ]);
+    }
+
+    public function import(Request $request){
+        $this->userAttempt();
+        request()->merge([
             'files' => [
                 $request->file('file')
             ]
         ]);
+        $attributes = request()->all();
+        unset($attributes['file']);
+        return $this->__patient_schema->import('Patient')->handle($attributes);
     }
 
     public function downloadTemplate(Request $request){
@@ -122,5 +230,53 @@ class PatientController extends EnvironmentController{
             backbone_asset('assets/patient-data.xlsx')
         );
         return response()->download(backbone_asset('assets/patient-data.xlsx'));
+    }
+
+    public function uploadChunk(Request $request){
+        ini_set('memory_limit', '1G');
+        $support = $this->SupportModel()->findOrFail(request()->import_id);
+        $support_chunks = $support->chunks;
+        $chunks = [];
+        foreach ($support_chunks as $key => $chunk) {
+            $chunks[] = [
+                'part_number' => $chunk['part_number'],
+                'url' => $chunk['url'],
+                'file_index' => $key
+            ];
+        }
+        $etags = [];
+        foreach ($chunks as $chunk) {
+            $file = $request->file("files.".$chunk['file_index']);
+            if (!$file || !$file->isValid()) {
+                throw new \Exception("File chunk #{$chunk['part_number']} invalid ".$file->getErrorMessage());
+            }
+
+            $etags[] = $this->uploadChunkProcess($file->getPathname(), [
+                'url' => $chunk['url'],
+                'part_number' => $chunk['part_number'],
+            ]);
+        }
+
+        return response()->json([
+            'etags' => $etags
+        ]);
+    }
+
+    public function uploadChunkProcess(string $filePath, array $data){
+        $fileStream = fopen($filePath, 'rb'); // buka stream
+        try {
+            $response = Http::withHeaders([
+                'Content-Type' => 'application/octet-stream',
+            ])->withBody($fileStream, 'application/octet-stream')
+            ->put($data['url']);
+
+            if ($response->failed()) {
+                throw new \Exception("Gagal upload chunk #{$data['part_number']} ke S3");
+            }
+
+            return trim($response->header('ETag'), '"');
+        } finally {
+            fclose($fileStream); // pastiin stream ditutup
+        }
     }
 }
