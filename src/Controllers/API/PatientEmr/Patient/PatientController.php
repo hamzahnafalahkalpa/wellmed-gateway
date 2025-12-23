@@ -9,6 +9,7 @@ use Projects\WellmedGateway\Requests\API\PatientEmr\Patient\{
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Aws\S3\S3Client;
+use Hanafalah\MicroTenant\Facades\MicroTenant;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Http;
 
@@ -123,8 +124,10 @@ class PatientController extends EnvironmentController{
                 'is_chunk' => true
             ]);
         }
-
+        $uuid    = Str::orderedUuid()->toString();
+        $target_key = "support/{$uuid}";
         if (isset(request()->is_presigned) && request()->is_presigned){
+            $target_key .= "/".request()->filename;
             $s3Client = new S3Client([
                 'version'     => 'latest',
                 'region'      => config('filesystems.disks.s3.region'),
@@ -135,9 +138,6 @@ class PatientController extends EnvironmentController{
             ]);
 
             $bucket = config('filesystems.disks.s3.bucket');
-            $uuid    = Str::orderedUuid()->toString();
-            $key     = "support/.chunks/{$uuid}/".request()->filename;
-            $target_key = "support/{$uuid}/".request()->filename;
 
             $result = $s3Client->createMultipartUpload([
                 'Bucket' => $bucket,
@@ -170,58 +170,116 @@ class PatientController extends EnvironmentController{
             request()->merge([
                 'upload_id'    => $uploadId,
                 'target_path'  => $target_key,
-                'chunk_path'  => $key,
                 'is_presigned' => true,
                 'chunks'      => $chunks,
+            ]);
+        }else{
+            if (!isset(request()->file)) throw new Exception("File is required", 1);
+
+            request()->merge([
+                'files' => [
+                    request()->file('file')
+                ],
+                'target_path'  => $target_key,
+                'file' => null
             ]);
         }
         return $this->__support_schema->storeSupport();
     }
     
-    public function uploadComplete(){
+    public function uploadComplete(Request $request){
         $support = $this->SupportModel()->findOrFail(request()->import_id);
-
-        $etags = request()->etags;
-        $s3Client = new S3Client([
-            'version' => 'latest',
-            'region' => config('filesystems.disks.s3.region'),
-            'credentials' => [
-                'key'    => config('filesystems.disks.s3.key'),
-                'secret' => config('filesystems.disks.s3.secret'),
-            ],
-        ]);
-
-        $parts = [];
-        foreach ($etags as $partNumber => $etag) {
-            $parts[] = [
-                'ETag' => trim($etag, '"'), // hapus tanda kutip
-                'PartNumber' => (int) $partNumber + 1, // partNumber dimulai dari 1
-            ];
+        if (isset(request()->etags) && count(request()->etags) > 0){
+            $etags = request()->etags;
+            $s3Client = new S3Client([
+                'version' => 'latest',
+                'region' => config('filesystems.disks.s3.region'),
+                'credentials' => [
+                    'key'    => config('filesystems.disks.s3.key'),
+                    'secret' => config('filesystems.disks.s3.secret'),
+                ],
+            ]);
+    
+            $parts = [];
+            foreach ($etags as $partNumber => $etag) {
+                $parts[] = [
+                    'ETag' => trim($etag, '"'), // hapus tanda kutip
+                    'PartNumber' => (int) $partNumber + 1, // partNumber dimulai dari 1
+                ];
+            }
+            $bucket = config('filesystems.disks.s3.bucket');
+            $result = $s3Client->completeMultipartUpload([
+                'Bucket' => $bucket,
+                'Key'    => $support->target_path,       // path file final di S3
+                'UploadId' => $support->upload_id,
+                'MultipartUpload' => [
+                    'Parts' => $parts
+                ],
+            ]);
+            $file_url = $result['Location'];
+            return response()->json([
+                'message' => 'Import running.',
+                'file_url' => $result['Location'],
+            ]);
+        }else{
+            $file_url = $support->paths[0] ?? null;
         }
-        $bucket = config('filesystems.disks.s3.bucket');
-        $result = $s3Client->completeMultipartUpload([
-            'Bucket' => $bucket,
-            'Key'    => $support->target_path,       // path file final di S3
-            'UploadId' => $support->upload_id,
-            'MultipartUpload' => [
-                'Parts' => $parts
-            ],
-        ]);
+        $support->setAttribute('paths',[$file_url]);
+        $support->save();
+
+        $headers = request()->headers->all();
+        unset($headers['content-type']);
+        $url = config('wellmed-backbone.listener.url',null);
+        // $url = 'http://host.docker.internal:9000';
+        $url = rtrim($url,'/').'/api/patient-emr/patient/import/process';
+        if (!isset($url)) throw new \Exception('Wellmed Backbone Listener URL is not configured');
+
+        // request()->merge([
+        //     'id' => $support->getKey(),
+        // ]);
+        // try {
+        //     $this->import($request);
+        // } catch (\Throwable $th) {
+        //     dd($th->getMessage());
+        //     //throw $th;
+        // }
+
+        try {
+            $response = Http::withHeaders(array_merge($headers,[
+                'Accept' => '*/*'
+            ]))
+            ->timeout(10)
+            ->post($url, ['connections' => config('database.connections'),'support' => $support->toViewApi()->resolve()]);
+            if ($response->failed()) {
+                throw new \RuntimeException(
+                    "Backbone Listener API call failed with status {$response->status()}: {$response->body()}"
+                );
+            }
+        } catch (\Throwable $th) {
+            throw $th;
+        }
         return response()->json([
-            'message' => 'Upload completed successfully.',
-            'file_url' => $result['Location'],
+            'message' => 'Import running.',
+            'file_url' => $file_url
         ]);
     }
 
     public function import(Request $request){
         $this->userAttempt();
-        request()->merge([
-            'files' => [
-                $request->file('file')
-            ]
-        ]);
-        $attributes = request()->all();
-        unset($attributes['file']);
+        \Log::channel('import')->info("Tenant ID: ".tenancy()->tenant->id);
+        if (!isset(request()->files)){
+            request()->merge([
+                'files' => [
+                    $request->file('file')
+                ]
+            ]);
+            $attributes = request()->all();
+            unset($attributes['file']);
+        }else{
+            $attributes = request()->all();
+        }
+        \Log::channel('import')->info('Import attributes', ['connections' => config('database.connections')]);
+        $attributes['tenant_id'] = tenancy()->tenant->id;
         return $this->__patient_schema->import('Patient')->handle($attributes);
     }
 
