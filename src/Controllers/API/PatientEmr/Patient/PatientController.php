@@ -235,10 +235,10 @@ class PatientController extends EnvironmentController{
         if (!isset($url)) throw new \Exception('Wellmed Backbone Listener URL is not configured');
 
         // request()->merge([
-        //     'id' => $support->getKey(),
+        //     'support' => $support->toViewApi()->resolve(),
         // ]);
         // try {
-        //     $this->import($request);
+        //     $this->import(request());
         // } catch (\Throwable $th) {
         //     dd($th->getMessage());
         //     //throw $th;
@@ -278,7 +278,6 @@ class PatientController extends EnvironmentController{
         }else{
             $attributes = request()->all();
         }
-        \Log::channel('import')->info('Import attributes', ['connections' => config('database.connections')]);
         $attributes['tenant_id'] = tenancy()->tenant->id;
         return $this->__patient_schema->import('Patient')->handle($attributes);
     }
