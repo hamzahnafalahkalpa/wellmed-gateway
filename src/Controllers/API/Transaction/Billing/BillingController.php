@@ -19,4 +19,11 @@ class BillingController extends EnvironmentController{
     public function show(ShowRequest $request){
         return $this->showBilling();
     }
+
+    public function kwitansi(){
+        request()->merge([
+            'transaction_id' => $this->BillingModel()->findOrFail(request()->billing_id)->has_transaction_id
+        ]);
+        return parent::kwitansi();
+    }
 }

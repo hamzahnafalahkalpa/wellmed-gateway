@@ -65,4 +65,66 @@ class EnvironmentController extends ApiController{
             $callback($query);
         })->storeBilling();
     }
+
+    public function kwitansi(){
+        $workspace = tenancy()->tenant->reference;
+        $workspace = $workspace->load($workspace->showUsingRelation());
+        $workspace = $workspace->toShowApi()->resolve();
+        $workspace = json_decode(json_encode($workspace));
+        $transaction = app(config('database.models.PosTransaction'));
+        $transaction = $transaction->with($transaction->showUsingRelation())->find(request()->transaction_id);
+        $transaction = $transaction->toShowApi()->resolve();
+        $transaction = json_decode(json_encode($transaction));
+        $transaction->created_at = \Carbon\Carbon::parse($transaction->created_at)->format('d/m/Y');
+        $billing = &$transaction->billing;
+        if (isset($billing)){
+            $invoices = &$billing->invoices;
+            foreach ($invoices as &$invoice){
+                $payment_history = &$invoice->payment_history;
+                if (isset($payment_history->form)){
+                    $payment_summaries = &$payment_history->form->payment_summaries;
+                    $payment_summary_model = app(config('database.models.PaymentSummary'));
+                    foreach ($payment_summaries as &$payment_summary){
+                        $payment_summary_model = $payment_summary_model->with([
+                            'paymentDetails' => function($query) use ($payment_summary){
+                                $query->with('transactionItem')->whereIn('id',array_column($payment_summary->payment_details,'id'));
+                            }
+                        ])->findOrFail($payment_summary->id);
+                        $payment_summary = $payment_summary_model->toShowApi()->resolve();
+                        $payment_summary = json_decode(json_encode($payment_summary));
+                    }
+                }
+                foreach ($invoice->split_payments as &$split_payment) {
+                    $split_payment->created_at = \Carbon\Carbon::parse($split_payment->created_at)->format('d/m/Y');
+                }
+            }
+        }
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView(
+            'wellmed::exports.billing',
+            [
+                'workspace'   => $workspace,
+                'transaction' => $transaction
+            ]
+        )->setOptions([
+            'enable_php'    => true,
+            'enable_remote'=> true,
+        ]);
+        $dompdf = $pdf->getDomPDF();
+        $pdf->render();
+        $canvas = $dompdf->getCanvas();
+
+        $font = $dompdf->getFontMetrics()->get_font('Helvetica', 'normal');
+
+        $canvas->page_text(
+            // 260,
+            40,
+            820,
+            "Halaman {PAGE_NUM} dari {PAGE_COUNT} | Dicetak pada ".date('d/m/Y H:i'),
+            $font,
+            9,
+            [0, 0, 0]
+        );
+
+        return $pdf->stream();
+    }
 }

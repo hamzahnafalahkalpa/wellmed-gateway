@@ -48,11 +48,40 @@ ApiAccess::secure(function(){
                             $payment_summary = json_decode(json_encode($payment_summary));
                         }
                     }
+                    foreach ($invoice->split_payments as &$split_payment) {
+                        $split_payment->created_at = \Carbon\Carbon::parse($split_payment->created_at)->format('d/m/Y');
+                    }
                 }
             }
-            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('wellmed::exports.billing', ['workspace'=>$workspace,'transaction'=>$transaction]);
-            // return $pdf->download('wellmed-billing.pdf');
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView(
+                'wellmed::exports.billing',
+                [
+                    'workspace'   => $workspace,
+                    'transaction' => $transaction
+                ]
+            )->setOptions([
+                'enable_php'    => true,
+                'enable_remote'=> true,
+            ]);
+            $dompdf = $pdf->getDomPDF();
+            $pdf->render();
+            $canvas = $dompdf->getCanvas();
+
+            $font = $dompdf->getFontMetrics()->get_font('Helvetica', 'normal');
+
+            $canvas->page_text(
+                // 260,
+                40,
+                820,
+                "Halaman {PAGE_NUM} dari {PAGE_COUNT} | Dicetak pada ".date('d/m/Y H:i'),
+                $font,
+                9,
+                [0, 0, 0]
+            );
+
             return $pdf->stream('wellmed-billing.pdf');
+
+            // return $pdf->download('wellmed-billing.pdf');
             // $workspace = tenancy()->tenant->reference;
             // $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('wellmed::exports.billing', ['workspace'=>$workspace]);
             // return $pdf->download('wellmed-billing.pdf');

@@ -28,6 +28,7 @@ Route::group([
         "prefix" => "/billing/{billing_id}",
         'as' => 'billing.show.'
     ],function(){
+        Route::get('/kwitansi',[BillingController::class,'kwitansi'])->name('kwitansi');
         Route::apiResource('/invoice',InvoiceController::class)->parameters(['invoice' => 'id']);
     });
 });

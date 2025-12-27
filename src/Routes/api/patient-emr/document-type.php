@@ -1,8 +1,9 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Hanafalah\LaravelSupport\Concerns\Support\HasRequestData;
-use Hanafalah\ModulePatient\Contracts\Data\PatientData;
+use Projects\WellmedGateway\Controllers\API\PatientEmr\DocumentType\Export\{
+    DocumentTypeExportController,
+};
 
 /*
 |--------------------------------------------------------------------------
@@ -14,12 +15,10 @@ use Hanafalah\ModulePatient\Contracts\Data\PatientData;
 | is assigned the "api" middleware group. Enjoy building your API!
 |
 */
+
 Route::group([
-    "prefix" => "/patient-emr",
-    "as"     => "patient-emr.",
+    "prefix" => "/document-type/{type}",
+    "as"     => "document-type.",
 ],function() {
-    include_once(__DIR__."/patient-emr/patient.php");
-    include_once(__DIR__."/patient-emr/document-type.php");
-    include_once(__DIR__."/patient-emr/referral.php");
-    include_once(__DIR__."/patient-emr/visit-registration.php");
+    Route::get('/{id}/export',[DocumentTypeExportController::class,'show'])->name('export.show');
 });

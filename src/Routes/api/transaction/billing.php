@@ -5,7 +5,6 @@ use Illuminate\Support\Facades\Route;
 use Projects\WellmedGateway\Controllers\API\Transaction\Billing\{
     BillingController
 };
-use Projects\WellmedGateway\Controllers\API\Transaction\Billing\Invoice\InvoiceController;
 
 /*
 |--------------------------------------------------------------------------
@@ -19,3 +18,9 @@ use Projects\WellmedGateway\Controllers\API\Transaction\Billing\Invoice\InvoiceC
 */
 
 Route::apiResource('/billing',BillingController::class)->parameters(['billing' => 'id']);
+Route::group([
+    "prefix" => "/billing/{billing_id}",
+    'as' => 'billing.show.'
+],function(){
+    Route::get('/kwitansi',[BillingController::class,'kwitansi'])->name('kwitansi');
+});
