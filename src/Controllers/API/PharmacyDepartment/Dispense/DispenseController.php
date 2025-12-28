@@ -24,15 +24,10 @@ class DispenseController extends EnvironmentController
         $medic_service = $this->MedicServiceModel();
         $medic_service = (!isset(request()->medic_service_id))
             ? $medic_service->where('label','INSTALASI FARMASI')->firstOrFail()
-            : $medic_service->findOrFail($request->medic_service_id);
+            : $medic_service->findOrFail(request()->medic_service_id);
 
-        $service_cluster = $this->ServiceClusterModel();
-        $service_cluster = (!isset(request()->service_cluster_id))
-            ? $service_cluster->where('label','LINTAS KLUSTER')->firstOrFail()
-            : $service_cluster->findOrFail($request->service_cluster_id);
         request()->merge([
             'medic_service_id' => $medic_service->getKey(),
-            'service_cluster_id' => $service_cluster->getKey()
         ]);
         return $this->storeVisitRegistration();
     }
