@@ -5,15 +5,17 @@ namespace Projects\WellmedGateway\Controllers\API\PatientEmr;
 use Hanafalah\ModuleExamination\Contracts\Schemas\Examination;
 use Hanafalah\ModuleExamination\Contracts\Schemas\Examination\Assessment\Assessment;
 use Hanafalah\ModulePatient\Contracts\Schemas\{
-    Referral,
-    VisitExamination,
-    VisitPatient,
-    VisitRegistration
+    Referral
 };
 use Projects\WellmedBackbone\Contracts\Schemas\ModulePatient\Patient;
 use Hanafalah\ModulePharmacy\Contracts\Schemas\PharmacySale;
 use Hanafalah\ModuleSupport\Contracts\Schemas\Support;
-use Projects\WellmedBackbone\Contracts\Schemas\ModulePatient\PractitionerEvaluation;
+use Projects\WellmedBackbone\Contracts\Schemas\ModulePatient\{
+    PractitionerEvaluation,
+    VisitExamination,
+    VisitPatient,
+    VisitRegistration
+};
 use Projects\WellmedGateway\Controllers\API\ApiController as ApiBaseController;
 use Projects\WellmedGateway\Jobs\ElasticJob;
 
