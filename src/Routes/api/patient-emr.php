@@ -19,6 +19,7 @@ Route::group([
     "as"     => "patient-emr.",
 ],function() {
     include_once(__DIR__."/patient-emr/patient.php");
+    include_once(__DIR__."/patient-emr/reservation.php");
     include_once(__DIR__."/patient-emr/letter-queue.php");
     include_once(__DIR__."/patient-emr/document-type.php");
     include_once(__DIR__."/patient-emr/referral.php");
