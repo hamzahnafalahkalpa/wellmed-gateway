@@ -126,7 +126,11 @@ class PatientController extends EnvironmentController{
         }
         $uuid    = Str::orderedUuid()->toString();
         $target_key = "support/{$uuid}";
-        if (isset(request()->is_presigned) && request()->is_presigned){
+        $is_prisigned = request()->is_prisigned;
+        if (isset($is_prisigned)){
+            $is_prisigned = filter_var($is_prisigned, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+        }
+        if (isset($is_prisigned) && $is_prisigned){
             $target_key .= "/".request()->filename;
             $s3Client = new S3Client([
                 'version'     => 'latest',
