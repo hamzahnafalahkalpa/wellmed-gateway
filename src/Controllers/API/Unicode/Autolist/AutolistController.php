@@ -22,7 +22,7 @@ class AutolistController extends ApiController{
 
     public function index(Request $request){
         $morph = Str::studly(request()->morph);
-        if (!in_array($morph,['Patient'])){
+        if (!in_array($morph,['Patient','Disease'])){
             request()->merge([ 
                 'search_name'  => request()->search_name ?? request()->search_value,
                 'search_value' => null
