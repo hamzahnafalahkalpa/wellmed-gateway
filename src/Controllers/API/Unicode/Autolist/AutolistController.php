@@ -49,6 +49,13 @@ class AutolistController extends ApiController{
 
                 return (isset(request()->search_flag)) ? [request()->search_flag => $datas[request()->search_flag]] : $datas;
             break;
+            case 'VisitRegistration':
+                return $this->callAutolist($morph,function($query){
+                    $query->when(isset(request()->is_emr) && request()->is_emr,function($query){
+                        $query->with('examinationSummary');
+                    });
+                });
+            break;
             case 'ItemStuff':
                 return $this->callAutolist($morph,function($query){
                     $query->withoutGlobalScope('flag')->when(isset(request()->search_flag),function($query){
