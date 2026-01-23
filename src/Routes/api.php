@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\API\ApiAccess\ApiAccessController;
 use Hanafalah\ApiHelper\Facades\ApiAccess;
 use Hanafalah\LaravelSupport\Facades\LaravelSupport;
 use Hanafalah\MicroTenant\Facades\MicroTenant;
@@ -14,6 +15,8 @@ ApiAccess::secure(function(){
         'as' => 'api.',
         'prefix' => 'api/'
     ],function(){
+        Route::post('refresh-token',[ApiAccessController::class,'refresh'])->name('refresh-token');
+
         LaravelSupport::callRoutes(__DIR__.'/api');
         Route::get('/wellmed-view',function(){
             $workspace = tenancy()->tenant->reference;
