@@ -17,8 +17,7 @@ class PatientController extends EnvironmentController{
 
     public function index(ViewRequest $request){
         $this->userAttempt();
-        // $this->recombineRequest();
-        return $this->__patient_schema->viewPatientPaginate();
+        return $this->__patient_schema->viewPatientList();
     }
 
     public function store(StoreRequest $request){

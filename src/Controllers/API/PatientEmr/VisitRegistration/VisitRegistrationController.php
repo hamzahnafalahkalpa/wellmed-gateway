@@ -12,6 +12,11 @@ class VisitRegistrationController extends EnvironmentController
     protected function commonRequest(){
         parent::commonRequest();
         $medic_service_label = request()->search_medic_service_label ?? request()->flag ?? null;
+        if (!isset(request()->search_created_at)){
+            request()->merge([
+                'search_created_at' => now()->format('Y-m-d')
+            ]);
+        }
         if (isset($medic_service_label)) {
             $medic_service_label = $this->mustArray($medic_service_label);
             foreach ($medic_service_label as $key => $label) {
