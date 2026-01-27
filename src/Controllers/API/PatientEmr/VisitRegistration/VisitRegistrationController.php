@@ -3,7 +3,7 @@
 namespace Projects\WellmedGateway\Controllers\API\PatientEmr\VisitRegistration;
 
 use Projects\WellmedGateway\Requests\API\PatientEmr\VisitRegistration\{
-    ViewRequest, StoreRequest, ShowRequest, DeleteRequest
+    ViewRequest, StoreRequest, ShowRequest, DeleteRequest, UpdateRequest
 };
 use Illuminate\Support\Str;
 
@@ -39,6 +39,37 @@ class VisitRegistrationController extends EnvironmentController
 
     public function store(StoreRequest $request){
         return $this->storeVisitRegistration();
+    }
+
+    public function update(UpdateRequest $request){
+        if (!isset(request()->id)) throw new \Exception('Id is required');
+        if (!in_array(request()->type,['DPJP'])) throw new \Exception('Type is not available');
+        $visit_registration_model = $this->VisitRegistrationModel()->findOrFail(request()->id);
+        return $this->transaction(function() use ($visit_registration_model){
+            switch (request()->type) {
+                case 'DPJP':
+                    if (!isset(request()->practitioner_id)) throw new \Exception('Practitioner id is required');
+                    $pracitioner_evaluation = $visit_registration_model->practitionerEvaluation;
+                    $pracitioner_evaluation->delete();
+                    
+                    $employee = $this->EmployeeModel()->findOrFail(request()->practitioner_id);
+                    app(config('app.contracts.PractitionerEvaluation'))->prepareStorePractitionerEvaluation($this->requestDTO(
+                        config('app.contracts.PractitionerEvaluationData'),[
+                            'reference_type' => $visit_registration_model->getMorphClass(),
+                            'reference_id' => $visit_registration_model->getKey(),
+                            'practitioner_type' => 'Employee',
+                            'practitioner_type' => request()->practitioner_id,
+                            'practitioner_model' => $employee,
+                            'profession_id' => $employee->profession_id,
+                            'as_pic' => true,
+                            'is_commit' => false
+                        ]
+                    ));
+                    $visit_registration_model->load('practitionerEvaluation');
+                break;
+            }
+            return $this->__visit_registration_schema->showVisitRegistration($visit_registration_model);
+        });
     }
 
     public function destroy(DeleteRequest $request){

@@ -19,7 +19,7 @@ class TransactionController extends EnvironmentController{
         return $this->storeTransaction();
     }
 
-    public function delete(DeleteRequest $request){
+    public function destroy(DeleteRequest $request){
         return $this->deleteTransaction();
     }
 }

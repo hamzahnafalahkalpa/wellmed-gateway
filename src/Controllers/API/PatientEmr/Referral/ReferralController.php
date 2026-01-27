@@ -27,7 +27,7 @@ class ReferralController extends EnvironmentController
         return $this->storeReferral();
     }
 
-    public function delete(DeleteRequest $request){
+    public function destroy(DeleteRequest $request){
         return $this->deleteReferral();
     }
 }

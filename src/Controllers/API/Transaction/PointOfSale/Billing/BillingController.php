@@ -35,7 +35,7 @@ class BillingController extends EnvironmentController{
         return $this->storeBilling();
     }
 
-    public function delete(DeleteRequest $request){
+    public function destroy(DeleteRequest $request){
         return $this->deleteBilling();
     }
 }

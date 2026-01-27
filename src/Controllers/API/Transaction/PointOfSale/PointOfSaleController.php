@@ -71,7 +71,7 @@ class PointOfSaleController extends EnvironmentController{
         return $transaction;
     }
 
-    public function delete(DeleteRequest $request){
+    public function destroy(DeleteRequest $request){
         return $this->deletePosTransaction();
     }
 }

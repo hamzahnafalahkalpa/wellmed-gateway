@@ -26,7 +26,7 @@ class VisitRegistrationController extends EnvironmentController
         return $this->storeVisitRegistration();
     }
 
-    public function delete(DeleteRequest $request){
+    public function destroy(DeleteRequest $request){
         return $this->deleteVisitRegistration();
     }
 }

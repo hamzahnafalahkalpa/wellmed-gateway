@@ -24,7 +24,7 @@ class ReservationController extends EnvironmentController
         return $this->storeReservation();
     }
 
-    public function delete(DeleteRequest $request){
+    public function destroy(DeleteRequest $request){
         return $this->deleteReservation();
     }
 }
