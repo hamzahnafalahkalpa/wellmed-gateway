@@ -1,9 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Projects\WellmedGateway\Controllers\API\PatientEmr\DocumentType\Export\{
-    DocumentTypeExportController,
-};
+use Projects\WellmedGateway\Controllers\API\PatientEmr\Reservation\ReservationController;
 
 /*
 |--------------------------------------------------------------------------

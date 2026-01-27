@@ -2,6 +2,7 @@
 
 namespace Projects\WellmedGateway\Controllers\API\PatientEmr;
 
+use Hanafalah\ModuleAppointment\Contracts\Schemas\Reservation;
 use Hanafalah\ModuleExamination\Contracts\Schemas\Examination;
 use Hanafalah\ModuleExamination\Contracts\Schemas\Examination\Assessment\Assessment;
 use Hanafalah\ModulePatient\Contracts\Schemas\{
@@ -31,7 +32,8 @@ class EnvironmentController extends ApiBaseController{
         protected Referral $__referral_schema,
         protected Assessment $__assessment_schema,
         protected PharmacySale $__pharmacy_sale_schema,
-        protected Support $__support_schema
+        protected Support $__support_schema,
+        protected Reservation $__reservation_schema
     )
     {
         parent::__construct();   
