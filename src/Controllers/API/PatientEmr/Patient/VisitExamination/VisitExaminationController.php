@@ -13,12 +13,15 @@ class VisitExaminationController extends EnvironmentController
     public function store(StoreRequest $request){
         $this->commonRequest();
         $visit_examination = request()->all();
+        $patient_model = $this->PatientModel()->findOrFail(request()->patient_id);
+        $visit_examination['patient_model'] = $patient_model;
         $patient_type_service_id = $visit_examination['patient_type_service_id'] ?? $this->PatientTypeServiceModel()->where('label','UMUM')->firstOrFail()->getKey();
         $medic_service_id        = $visit_examination['medic_service_id'] ?? $this->MedicServiceModel()->where('label','UMUM')->firstOrFail()->getKey();
         $visit_patient = [
             'id' => null,
             'patient_id' => request()->patient_id,
             "patient_type_service_id" => $patient_type_service_id,
+            'patient_model' => $patient_model,
             'visit_registration' => [
                 'id' => null,
                 'status' => 'PROCESSING',

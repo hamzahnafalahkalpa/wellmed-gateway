@@ -20,6 +20,10 @@ class FrontlineController extends EnvironmentController
         return $this->getVisitExaminationPaginate();
     }
 
+    public function store(ViewRequest $request){
+        return $this->storeVisitExamination();
+    }
+
     public function show(ShowRequest $request){
         return $this->showVisitExamination();
     }
