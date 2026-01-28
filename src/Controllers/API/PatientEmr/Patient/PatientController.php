@@ -7,9 +7,7 @@ use Projects\WellmedGateway\Requests\API\PatientEmr\Patient\{
     ShowRequest, ViewRequest, DeleteRequest, StoreRequest
 };
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Aws\S3\S3Client;
-use Hanafalah\MicroTenant\Facades\MicroTenant;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Http;
 
