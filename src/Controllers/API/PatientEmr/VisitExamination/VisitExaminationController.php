@@ -21,6 +21,16 @@ class VisitExaminationController extends EnvironmentController
     }
 
     public function store(StoreRequest $request){
+        $practitioner_evaluations = request()->practitioner_evaluations;
+        if (!isset($practitioner_evaluations) || count($practitioner_evaluations) > 0){
+            $practitioner_evaluations = [
+                "practitioner_type" => "Employee", //nullable, default from config
+                "practitioner_id"=> $this->global_employee->getKey(), //GET FROM AUTOLIST - EMPLOYEE LIST (DOCTOR)
+            ];
+            request()->merge([
+                'practitioner_evaluations' => [$practitioner_evaluations]
+            ]);
+        }
         return $this->storeVisitExamination();
     }
 
