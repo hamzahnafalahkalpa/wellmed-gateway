@@ -121,6 +121,24 @@ class AutolistController extends ApiController{
                             //     break;
                             // }
                         });
+                    })->when(isset(request()->search_medic_service_label),function($query){
+                        $query->whereHasMorph('reference',[
+                            'ClinicalPathology',
+                            'AnatomicalPathology',
+                            'MedicalTreatment'
+                        ],function($query){
+                            $query->whereHas('medicalServiceTreatment',function($query){
+                                $medic_service_label = $this->mustArray(request()->search_medic_service_label);
+                                $query->whereIn('props->prop_service_reference->label',$medic_service_label);
+                            });
+                            // $model = $query->getModel();
+                            // switch($model->getMorphClass()){
+                            //     case 'MasterInformedConsent':
+                            //     break;
+                            //     default :
+                            //     break;
+                            // }
+                        });
                     });
                 });
             break;
