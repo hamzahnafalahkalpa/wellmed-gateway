@@ -23,5 +23,5 @@ Route::group([
     "as"     => "frontline.show.",
 ],function() {
     Route::post('/examination',[ExaminationController::class,'store'])->name('examination.store');
-    Route::put('/examination/{type}',[ExaminationController::class,'update'])->name('examination.update');
+    Route::apiResource('/{morph}/assessment',AssessmentController::class)->parameters(['assessment' => 'id'])->only(['store','show','index']);
 });

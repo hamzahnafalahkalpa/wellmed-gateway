@@ -16,8 +16,8 @@ Route::group([
     "prefix" => "/pharmacy-department",
     "as"     => "pharmacy-department.",
 ],function() {
-    include_once(__DIR__."/pharmacy-department/point-of-sale.php");
-    include_once(__DIR__."/pharmacy-department/pharmacy-sale.php");
+    // include_once(__DIR__."/pharmacy-department/point-of-sale.php");
+    // include_once(__DIR__."/pharmacy-department/pharmacy-sale.php");
     include_once(__DIR__."/pharmacy-department/frontline.php");
-    include_once(__DIR__."/pharmacy-department/dispense.php");
+    // include_once(__DIR__."/pharmacy-department/dispense.php");
 });

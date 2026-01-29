@@ -3,7 +3,7 @@
 namespace Projects\WellmedGateway\Controllers\API\PatientEmr\VisitExamination;
 
 use Projects\WellmedGateway\Controllers\API\PatientEmr\EnvironmentController as EnvEnvironmentController;
-use Projects\WellmedGateway\Jobs\ElasticJob;
+use Hanafalah\LaravelSupport\Jobs\ElasticJob;
 
 class EnvironmentController extends EnvEnvironmentController
 {

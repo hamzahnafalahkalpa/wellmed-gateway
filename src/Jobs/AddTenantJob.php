@@ -5,7 +5,7 @@ namespace Projects\WellmedGateway\Jobs;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Artisan;
-use Projects\WellmedBackbone\Jobs\JobRequest;
+use Hanafalah\LaravelSupport\Jobs\JobRequest;
 use Illuminate\Queue\SerializesModels;
 
 class AddTenantJob implements ShouldQueue

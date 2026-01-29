@@ -2,7 +2,7 @@
 
 namespace Projects\WellmedGateway\Schemas;
 
-use Projects\WellmedBackbone\Jobs\JobRequest;
+use Hanafalah\LaravelSupport\Jobs\JobRequest;
 use Projects\WellmedGateway\Contracts\Schemas\Elastic as SchemasElastic;
 
 class Elastic implements SchemasElastic {
@@ -16,9 +16,13 @@ class Elastic implements SchemasElastic {
     }
 
     public function run($client, ?array $attributes = null){
-        $attributes ??= JobRequest::all();        
+        $attributes ??= JobRequest::all();
         switch ($attributes['type']) {
             case 'BULK':
+                (new ElasticBulk)->run($client,$attributes);
+            break;
+            case 'DELETE':
+                // Handle direct delete operations
                 (new ElasticBulk)->run($client,$attributes);
             break;
         }

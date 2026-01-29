@@ -15,5 +15,4 @@ Route::group([
     Route::apiResource('/patient-type',PatientTypeController::class)->parameters(['patient-type' => 'id']);
     Route::apiResource('/patient-type-service',PatientTypeServiceController::class)->parameters(['patient-type-service' => 'id']);
     Route::apiResource('/medic-service',MedicServiceController::class)->parameters(['medic-service' => 'id']);
-    Route::apiResource('/master-informed-consent',MasterInformedConsentController::class)->parameters(['service-label' => 'id']);
 });

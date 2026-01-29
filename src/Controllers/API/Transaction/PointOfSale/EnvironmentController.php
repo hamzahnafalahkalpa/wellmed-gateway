@@ -3,7 +3,7 @@
 namespace Projects\WellmedGateway\Controllers\API\Transaction\PointOfSale;
 
 use Projects\WellmedGateway\Controllers\API\Transaction\EnvironmentController as EnvTransaction;
-use Projects\WellmedGateway\Jobs\ElasticJob;
+use Hanafalah\LaravelSupport\Jobs\ElasticJob;
 
 class EnvironmentController extends EnvTransaction{
     protected function getPosTransactionPaginate(?callable $callback = null){        

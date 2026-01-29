@@ -8,17 +8,30 @@ class ElasticBulk extends Elastic implements SchemasElasticBulk {
     public function run($client,?array $attributes = null){
         $bulks = [];
         foreach ($attributes['datas'] as $datas) {
-            foreach ($datas['data'] as $data) {
+            $action = $datas['action'] ?? 'index';
+
+            if ($action === 'delete') {
+                // Handle delete action
                 $bulks[] = [
-                    'index' => [
+                    'delete' => [
                         '_index' => $datas['index'],
-                        '_id' => $data['id']
+                        '_id' => $datas['id']
                     ]
                 ];
-                $bulks[] = $data;
+            } else {
+                // Handle index action (default)
+                foreach ($datas['data'] as $data) {
+                    $bulks[] = [
+                        'index' => [
+                            '_index' => $datas['index'],
+                            '_id' => $data['id']
+                        ]
+                    ];
+                    $bulks[] = $data;
+                }
             }
         }
         $this->bulks($bulks);
-        $client->bulk($this->__bulks);
+        $response = $client->bulk($this->__bulks);
     }
 }

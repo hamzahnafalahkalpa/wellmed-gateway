@@ -2,7 +2,7 @@
 
 namespace Projects\WellmedGateway\Controllers\API\PatientEmr\Patient;
 
-use Projects\WellmedGateway\Jobs\ElasticJob;
+use Hanafalah\LaravelSupport\Jobs\ElasticJob;
 use Projects\WellmedGateway\Requests\API\PatientEmr\Patient\{
     ShowRequest, ViewRequest, DeleteRequest, StoreRequest
 };

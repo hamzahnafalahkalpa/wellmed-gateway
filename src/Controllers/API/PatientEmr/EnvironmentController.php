@@ -18,7 +18,7 @@ use Projects\WellmedBackbone\Contracts\Schemas\ModulePatient\{
     VisitRegistration
 };
 use Projects\WellmedGateway\Controllers\API\ApiController as ApiBaseController;
-use Projects\WellmedGateway\Jobs\ElasticJob;
+use Hanafalah\LaravelSupport\Jobs\ElasticJob;
 
 class EnvironmentController extends ApiBaseController{
 
