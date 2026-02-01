@@ -21,6 +21,7 @@ class VisitExaminationController extends EnvironmentController
     }
 
     public function store(StoreRequest $request){
+        $this->userAttempt();
         $practitioner_evaluations = request()->practitioner_evaluations;
         if (!isset($practitioner_evaluations) || count($practitioner_evaluations) > 0){
             $practitioner_evaluations = [

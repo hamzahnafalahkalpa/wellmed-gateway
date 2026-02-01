@@ -14,7 +14,7 @@ trait HasUser
 
     public function userAttempt()
     {
-        $user = ApiAccess::getUser();
+        $user = auth()->user();;
         $this->global_user = $user;
         if (isset($user)){
             $user->load([
