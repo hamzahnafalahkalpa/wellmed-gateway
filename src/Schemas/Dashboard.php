@@ -877,6 +877,10 @@ class Dashboard implements DashboardContract
                 ],
             ],
 
+            // Widget 6: Trending - Visit trends by gender over time
+            // ECharts dataset format for line chart visualization
+            'trending' => $this->generateTrendingData($searchType, $now),
+
             // Metadata
             'meta' => [
                 'period_type' => $searchType,
@@ -890,5 +894,115 @@ class Dashboard implements DashboardContract
                 'version' => '2.0.0',
             ],
         ];
+    }
+
+    /**
+     * Generate trending data based on search type
+     * Format: ECharts dataset source for line chart with gender breakdown
+     *
+     * @param string $searchType
+     * @param Carbon $now
+     * @return array
+     */
+    protected function generateTrendingData(string $searchType, Carbon $now): array
+    {
+        $labels = ['Kunjungan']; // First element is label column
+        $maleData = ['Laki-Laki'];
+        $femaleData = ['Perempuan'];
+
+        switch ($searchType) {
+            case 'daily':
+                // Last 7 days
+                for ($i = 6; $i >= 0; $i--) {
+                    $date = $now->copy()->subDays($i);
+                    $labels[] = $date->format('d M'); // e.g., "24 Des"
+
+                    // Random visit counts with slight growth trend
+                    $baseMale = 45 + ($i * 2);
+                    $baseFemale = 38 + ($i * 2);
+                    $maleData[] = $baseMale + rand(-5, 10);
+                    $femaleData[] = $baseFemale + rand(-5, 10);
+                }
+                break;
+
+            case 'weekly':
+                // Last 7 weeks
+                for ($i = 6; $i >= 0; $i--) {
+                    $date = $now->copy()->subWeeks($i);
+                    $weekNumber = (int) $date->format('W');
+                    $labels[] = "W{$weekNumber}"; // e.g., "W50"
+
+                    // Weekly aggregated counts
+                    $baseMale = 280 + ($i * 15);
+                    $baseFemale = 240 + ($i * 15);
+                    $maleData[] = $baseMale + rand(-20, 40);
+                    $femaleData[] = $baseFemale + rand(-20, 40);
+                }
+                break;
+
+            case 'monthly':
+                // Last 12 months
+                for ($i = 11; $i >= 0; $i--) {
+                    $date = $now->copy()->subMonths($i);
+                    $labels[] = $date->format('M Y'); // e.g., "Jan 2026"
+
+                    // Monthly aggregated counts
+                    $baseMale = 1200 + ($i * 50);
+                    $baseFemale = 1050 + ($i * 50);
+                    $maleData[] = $baseMale + rand(-100, 150);
+                    $femaleData[] = $baseFemale + rand(-100, 150);
+                }
+                break;
+
+            case 'yearly':
+                // Last 5 years
+                for ($i = 4; $i >= 0; $i--) {
+                    $year = $now->year - $i;
+                    $labels[] = (string) $year; // e.g., "2022"
+
+                    // Yearly aggregated counts
+                    $baseMale = 12000 + ($i * 500);
+                    $baseFemale = 10500 + ($i * 500);
+                    $maleData[] = $baseMale + rand(-500, 1000);
+                    $femaleData[] = $baseFemale + rand(-500, 1000);
+                }
+                break;
+        }
+
+        return [
+            'dataset' => [
+                'source' => [
+                    $labels,      // First row: x-axis labels
+                    $maleData,    // Second row: Male visit counts
+                    $femaleData,  // Third row: Female visit counts
+                ]
+            ],
+            'title' => 'Tren Kunjungan Pasien',
+            'subtitle' => $this->getTrendingSubtitle($searchType),
+            'chart_type' => 'line',
+            'series_layout' => 'row',
+        ];
+    }
+
+    /**
+     * Get trending subtitle based on search type
+     *
+     * @param string $searchType
+     * @return string
+     */
+    protected function getTrendingSubtitle(string $searchType): string
+    {
+        switch ($searchType) {
+            case 'daily':
+                return 'Berdasarkan 7 hari terakhir';
+            case 'weekly':
+                return 'Berdasarkan 7 minggu terakhir';
+            case 'monthly':
+                return 'Berdasarkan 12 bulan terakhir';
+            case 'yearly':
+                return 'Berdasarkan 5 tahun terakhir';
+            default:
+                return '';
+        }
     }
 }
