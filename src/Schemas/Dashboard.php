@@ -208,10 +208,12 @@ class Dashboard implements DashboardContract
         if (empty($response['hits']['hits'])) {
             return [
                 'motivational_stats' => [
-                    'today' => 0,
-                    'yesterday' => 0,
+                    'current' => 0,
                     'target' => 0,
                     'percentage' => 0,
+                    'remaining' => 0,
+                    'growth' => 0,
+                    'growth_percentage' => 0,
                 ],
                 'statistics' => [
                     $this->formatStatistic('patients', 'Jumlah Pasien', 0, 0, 'mdi:account-group', 'blue'),
@@ -237,10 +239,12 @@ class Dashboard implements DashboardContract
         // Transform raw Elasticsearch data to FE widget structure
         return [
             'motivational_stats' => $hit['motivational_stats'] ?? [
-                'today' => 0,
-                'yesterday' => 0,
+                'current' => 0,
                 'target' => 0,
                 'percentage' => 0,
+                'remaining' => 0,
+                'growth' => 0,
+                'growth_percentage' => 0,
             ],
             'statistics' => $hit['statistics'] ?? [],
             'pending_items' => $hit['pending_items'] ?? [],
@@ -360,10 +364,12 @@ class Dashboard implements DashboardContract
             // Prepare document with FE-friendly structure
             $document = [
                 'motivational_stats' => $data['motivational_stats'] ?? [
-                    'today' => 0,
-                    'yesterday' => 0,
+                    'current' => 0,
                     'target' => 0,
                     'percentage' => 0,
+                    'remaining' => 0,
+                    'growth' => 0,
+                    'growth_percentage' => 0,
                 ],
                 'statistics' => $data['statistics'] ?? [],
                 'pending_items' => $data['pending_items'] ?? [],
@@ -488,15 +494,14 @@ class Dashboard implements DashboardContract
         $now = Carbon::now();
 
         return [
-            // Widget 1: Motivational Statistics - Booking comparison with target
+            // Widget 1: Motivational Statistics - Current vs Target (previous period)
             'motivational_stats' => [
-                'today' => 245,
-                'yesterday' => 227,
-                'target' => 300,
-                'percentage' => 81.7,
-                'remaining' => 55, // target - today
-                'growth' => 18, // today - yesterday
-                'growth_percentage' => 7.9, // ((today - yesterday) / yesterday) * 100
+                'current' => 245,        // Current period value (today/this week/this month/this year)
+                'target' => 227,         // Target is previous period value (yesterday/last week/last month/last year)
+                'percentage' => 107.9,   // (current / target) * 100
+                'remaining' => -18,      // target - current (negative = exceeded target)
+                'growth' => 18,          // current - target (positive = growth, negative = decline)
+                'growth_percentage' => 7.9, // ((current - target) / target) * 100
             ],
 
             // Widget 2: Statistics Cards - Array of 4 main stats with full presentation data
