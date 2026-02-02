@@ -128,7 +128,11 @@ class AutolistController extends ApiController{
                             'MedicalTreatment'
                         ],function($query){
                             $query->whereHas('medicalServiceTreatment',function($query){
-                                $medic_service_label = $this->mustArray(request()->search_medic_service_label);
+                                $medic_service_label = request()->search_medic_service_label;
+                                if (!is_array($medic_service_label) && Str::contains($medic_service_label,',')){
+                                    $medic_service_label = explode($medic_service_label,',');
+                                }
+                                $medic_service_label = $this->mustArray($medic_service_label);
                                 $query->whereIn('props->prop_service_reference->label',$medic_service_label);
                             });
                             // $model = $query->getModel();
