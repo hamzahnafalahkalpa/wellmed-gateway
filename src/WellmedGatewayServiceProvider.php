@@ -20,6 +20,12 @@ class WellmedGatewayServiceProvider extends WellmedGatewayEnvironment
         $this->registerMainClass(WellmedGateway::class,false)
             ->registerCommandService(Providers\CommandServiceProvider::class)
             ->registers('*');
+
+        // Register Dashboard Schema binding
+        $this->app->bind(
+            \Projects\WellmedGateway\Contracts\Schemas\Dashboard::class,
+            \Projects\WellmedGateway\Schemas\Dashboard::class
+        );
     }
 
     public function boot(){      

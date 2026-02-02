@@ -10,6 +10,7 @@ use Projects\WellmedGateway\Requests\API\Transaction\PointOfSale\Billing\{
 class BillingController extends EnvironmentController{
     protected function commonRequest()
     {
+        parent::commonRequest();
         request()->merge([
             'has_transaction_id' => request()->transaction_id,
             'author_type'  => request()->author_type ?? $this->global_employee->getMorphClass(),
