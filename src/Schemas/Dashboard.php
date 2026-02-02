@@ -119,6 +119,21 @@ class Dashboard implements DashboardContract
                 }
                 break;
 
+            case 'weekly':
+                if (!empty($params['search_year']) && !empty($params['search_week'])) {
+                    $must[] = [
+                        'term' => [
+                            'year' => (int) $params['search_year']
+                        ]
+                    ];
+                    $must[] = [
+                        'term' => [
+                            'week' => (int) $params['search_week']
+                        ]
+                    ];
+                }
+                break;
+
             case 'monthly':
                 if (!empty($params['search_year']) && !empty($params['search_month'])) {
                     $must[] = [
@@ -237,6 +252,7 @@ class Dashboard implements DashboardContract
                 'date' => $hit['date'] ?? $now->format('Y-m-d'),
                 'year' => $hit['year'] ?? $now->year,
                 'month' => $hit['month'] ?? $now->month,
+                'week' => $hit['week'] ?? (int) $now->format('W'),
                 'day' => $hit['day'] ?? $now->day,
                 'data_source' => 'elasticsearch',
                 'aggregation_period' => $hit['aggregation_period'] ?? null,
@@ -360,6 +376,7 @@ class Dashboard implements DashboardContract
                 'date' => $now->format('Y-m-d'),
                 'year' => $now->year,
                 'month' => $now->month,
+                'week' => (int) $now->format('W'), // ISO-8601 week number
                 'day' => $now->day,
                 'aggregation_period' => $periodType,
 
@@ -417,6 +434,9 @@ class Dashboard implements DashboardContract
         switch ($periodType) {
             case 'daily':
                 $parts[] = $date->format('Y-m-d');
+                break;
+            case 'weekly':
+                $parts[] = $date->format('Y') . '-W' . $date->format('W');
                 break;
             case 'monthly':
                 $parts[] = $date->format('Y-m');
@@ -859,6 +879,7 @@ class Dashboard implements DashboardContract
                 'date' => $now->format('Y-m-d'),
                 'year' => $now->year,
                 'month' => $now->month,
+                'week' => (int) $now->format('W'), // ISO-8601 week number
                 'day' => $now->day,
                 'data_source' => 'dummy',
                 'version' => '2.0.0',
