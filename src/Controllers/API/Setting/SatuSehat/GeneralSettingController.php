@@ -2,6 +2,8 @@
 
 namespace Projects\WellmedGateway\Controllers\API\Setting\SatuSehat;
 
+use Projects\WellmedBackbone\Contracts\Schemas\ModuleWarehouse\Room;
+use Projects\WellmedBackbone\Contracts\Schemas\ModuleWorkspace\Workspace;
 use Projects\WellmedBackbone\Contracts\Schemas\SatuSehat\GeneralSetting;
 use Projects\WellmedGateway\Controllers\API\ApiController;
 use Projects\WellmedGateway\Requests\API\Setting\SatuSehat\GeneralSetting\{
@@ -10,7 +12,9 @@ use Projects\WellmedGateway\Requests\API\Setting\SatuSehat\GeneralSetting\{
 
 class GeneralSettingController extends ApiController{
     public function __construct(
-        protected GeneralSetting $__schema
+        protected GeneralSetting $__schema,
+        protected Room $__room,
+        protected Workspace $__workspace,
     ){
         parent::__construct();
     }
@@ -24,6 +28,7 @@ class GeneralSettingController extends ApiController{
                 'organization_id' => $satu_sehat['organization_id'] ?? null,
                 'client_id' => $satu_sehat['client_id'] ?? null,
                 'client_secret' => $satu_sehat['client_secret'] ?? null,
+                'ihs_number' => $satu_sehat['ihs_number'] ?? null,
             ],
             'locations' => call_user_func(function(){
                 $rooms = $this->RoomModel()->get();
@@ -63,55 +68,89 @@ class GeneralSettingController extends ApiController{
 
     public function store(StoreRequest $request){
         $datas = request()->all();
-        $organization  = $datas['organization'] ?? null;
-        $locations     = $datas['locations'] ?? null;
-        $practitioners = $datas['practitioners'] ?? null;
-        $datas = [];
+        $datas['organization'] ??= null;
+        $datas['locations'] ??= null;
+        $datas['practitioners'] ??= null;
+        $organization  = &$datas['organization'];
+        $locations     = &$datas['locations'];
+        $practitioners = &$datas['practitioners'];
+        $workspace = $this->getWorkspace();
         if (isset($organization)) {
-            $workspace = $this->getWorkspace();
             $integration = $workspace->integration;
+            if (!isset($integration)) $integration = $workspace->getIntegrationPayload();
             $satu_sehat = &$integration['satu_sehat']['general'];
-            $satu_sehat['organization_id'] = $organization['organization_id'];
+            $satu_sehat['ihs_number'] = $organization['organization_id'];
             $satu_sehat['client_id'] = $organization['client_id'];
             $satu_sehat['client_secret'] = $organization['client_secret'];
             $workspace->setAttribute('integration',$integration);
             $workspace->save();
+            if (!isset($satu_sehat['ihs_number'])){
+                try {
+                    $this->__workspace->prepareStoreSatuSehatOrganization($workspace);
+                } catch (\Throwable $th) {
+                    throw $th;
+                }
+            }
+            $organization = [
+                'organization_id' => $satu_sehat['ihs_number'],
+                'client_id' => $satu_sehat['client_id'],
+                'client_secret' => $satu_sehat['client_secret']
+            ];
         }
-
-        if (isset($locations)) {
-            foreach ($locations as $location) {
-                $datas[] = [
-                    "id" => $location['id'] ?? null,
-                    'name' => 'GeneralSettingLocation',
-                    'reference_type' => 'Room',
-                    'reference_id' => $location['reference_id'],
-                    'method' => 'GET'
-                ];
-                $room = $this->RoomModel()->findOrFail($location['reference_id']);
-                $room->ihs_number = $location['ihs_number'];
-                $room->save();
+        $workspace->refresh();
+        $integration = $workspace->integration;
+        if (isset($integration) && isset($integration['satu_sehat']['general']['ihs_number'])){
+            if (isset($locations)) {
+                foreach ($locations as &$location) {
+                    $location = [
+                        "id" => $location['id'] ?? null,
+                        'name' => 'GeneralSettingLocation',
+                        'reference_type' => 'Room',
+                        'reference_id' => $location['reference_id'],
+                        'method' => 'GET',
+                        'ihs_number' => $location['ihs_number'] ?? null
+                    ];
+                    $room = $this->RoomModel()->findOrFail($location['reference_id']);
+                    $room->ihs_number = $location['ihs_number'];
+                    $room->save();
+                    if (!isset($room->ihs_number)){
+                        try {
+                            $this->__room->prepareStoreSatuSehatLocation(
+                                $this->requestDTO(config('app.contracts.RoomData'),[
+                                    'id' => $room->id,
+                                    'name' => $room->name,
+                                    'building_id' => $room->building_id,
+                                    'room_model' => $room
+                                ])
+                            ,$room);
+                        } catch (\Throwable $th) {
+                            throw $th;
+                        }
+                    }
+                }
+            }
+            if (isset($practitioners)) {
+                foreach ($practitioners as &$practitioner) {
+                    $practitioner = [
+                        "id" => $practitioner['id'] ?? null,
+                        'name' => 'GeneralSettingPractitioner',
+                        'reference_type' => 'Employee',
+                        'reference_id' => $practitioner['reference_id'],
+                        'method' => 'GET',
+                        'ihs_number' => $practitioner['ihs_number'] ?? null,
+                        'env_type' => config('satu-sehat.environment.env_type'),
+                    ];
+                    $employee = $this->EmployeeModel()->findOrFail($practitioner['reference_id']);
+                    $card_identity = $employee->card_identity;
+                    $card_identity['ihs_number'] = $practitioner['ihs_number'];
+                    $employee->setAttribute('card_identity',$card_identity);
+                    $employee->save();
+                }
             }
         }
-        if (isset($practitioners)) {
-            foreach ($practitioners as $practitioner) {
-                $datas[] = [
-                    "id" => $practitioner['id'] ?? null,
-                    'name' => 'GeneralSettingPractitioner',
-                    'reference_type' => 'Employee',
-                    'reference_id' => $practitioner['reference_id'],
-                    'method' => 'GET',
-                    'env_type' => config('satu-sehat.environment.env_type'),
-                ];
-                $employee = $this->EmployeeModel()->findOrFail($practitioner['reference_id']);
-                $card_identity = $employee->card_identity;
-                $card_identity['ihs_number'] = $practitioner['ihs_number'];
-                $employee->setAttribute('card_identity',$card_identity);
-                $employee->save();
-            }
-        }
-        request()->replace($datas);
-        $collections = $this->__schema->storeMultipleGeneralSetting($datas);
-        return $collections;
+        // request()->replace($datas);
+        // $collections = $this->__schema->storeMultipleGeneralSetting($datas);
+        return $datas;
     }
 
     public function destroy(DeleteRequest $request){
