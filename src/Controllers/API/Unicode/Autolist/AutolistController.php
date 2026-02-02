@@ -241,6 +241,17 @@ class AutolistController extends ApiController{
                     return $this->callAutolist($morph);
                 }
             break;
+            case 'Employee':
+                $search_profession_label = request()->search_profession_label;
+                if (isset($search_profession_label) && !is_array($search_profession_label) && Str::contains($search_profession_label,',')){
+                    $search_profession_label = explode(',',$search_profession_label);
+                    $search_profession_label = $this->mustArray($search_profession_label);
+                    request()->merge([
+                        'search_profession_label' => $search_profession_label
+                    ]);
+                }
+                return $this->callAutolist($morph);
+            break;
             case 'Assessment':
                 $patient_id = request()->search_patient_id;
                 request()->merge([
