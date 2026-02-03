@@ -80,7 +80,7 @@ class VisitRegistrationController extends EnvironmentController
      * Request EMR export for a visit registration.
      *
      * @param string $id Visit registration ID
-     * @return \Illuminate\Http\JsonResponse
+     * @return \Illuminate\Http\JsonResponse|\Symfony\Component\HttpFoundation\StreamedResponse
      */
     public function export(string $id)
     {
@@ -92,11 +92,18 @@ class VisitRegistrationController extends EnvironmentController
             ], 404);
         }
 
-        // Store the visit registration model in the schema
-        // $this->__visit_registration_schema->entityData($visitRegistration);
-
+        // Check if sync mode is requested (default is sync)
+        $isSync = filter_var(request()->input('sync', true), FILTER_VALIDATE_BOOLEAN);
         // Call export via DataManagement trait
-        $export = $this->__visit_registration_schema->export('VisitRegistrationEmr')->handle();
+        $exportHandler = $this->__visit_registration_schema->export('VisitRegistrationEmr');
+
+        // Sync mode: return PDF stream directly
+        if ($isSync) {
+            return $exportHandler->generateSync();
+        }
+
+        // Async mode: create export record and dispatch job
+        $export = $exportHandler->handle();
 
         return response()->json([
             'message' => 'Export request submitted successfully',

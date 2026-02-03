@@ -16,5 +16,19 @@ Route::group([
     Route::apiResource('/patient-integration',PatientIntegrationController::class)->parameters(['patient-integration' => 'id']);
     Route::apiResource('/encounter-integration',EncounterIntegrationController::class)->parameters(['encounter-integration' => 'id']);
     Route::apiResource('/satu-sehat-log',SatuSehatLogController::class)->only('destroy')->parameters(['satu-sehat-log' => 'id']);
+
+    // Dashboard routes - Current/Live data
+    Route::get('/dashboard', [SatuSehatLogController::class, 'dashboard'])->name('dashboard');
+    Route::get('/dashboard/current', [SatuSehatLogController::class, 'currentDashboard'])->name('dashboard.current');
+    Route::get('/dashboard/example', [SatuSehatLogController::class, 'exampleDashboard'])->name('dashboard.example');
+    Route::post('/dashboard/update-current', [SatuSehatLogController::class, 'updateCurrentCount'])->name('dashboard.update-current');
+    Route::post('/dashboard/update-synced', [SatuSehatLogController::class, 'updateSyncedCount'])->name('dashboard.update-synced');
+    Route::post('/dashboard/increment-synced', [SatuSehatLogController::class, 'incrementSyncedCount'])->name('dashboard.increment-synced');
+    Route::post('/dashboard/bulk-update', [SatuSehatLogController::class, 'bulkUpdateDashboard'])->name('dashboard.bulk-update');
+
+    // Dashboard routes - Monthly snapshots (for future historical data)
+    Route::get('/dashboard/snapshots', [SatuSehatLogController::class, 'availableSnapshots'])->name('dashboard.snapshots');
+    Route::get('/dashboard/snapshots/{month}', [SatuSehatLogController::class, 'monthlySnapshot'])->name('dashboard.snapshots.show');
+    Route::post('/dashboard/snapshots/{month}', [SatuSehatLogController::class, 'storeSnapshot'])->name('dashboard.snapshots.store');
 });
 
