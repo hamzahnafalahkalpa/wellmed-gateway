@@ -5,6 +5,7 @@ namespace Projects\WellmedGateway\Controllers\API\Setting\SatuSehat;
 use Projects\WellmedBackbone\Contracts\Schemas\ModuleWarehouse\Room;
 use Projects\WellmedBackbone\Contracts\Schemas\ModuleWorkspace\Workspace;
 use Projects\WellmedBackbone\Contracts\Schemas\SatuSehat\GeneralSetting;
+use Projects\WellmedBackbone\Contracts\Schemas\ModuleEmployee\Employee;
 use Projects\WellmedGateway\Controllers\API\ApiController;
 use Projects\WellmedGateway\Requests\API\Setting\SatuSehat\GeneralSetting\{
     ViewRequest, ShowRequest, StoreRequest, DeleteRequest
@@ -15,6 +16,7 @@ class GeneralSettingController extends ApiController{
         protected GeneralSetting $__schema,
         protected Room $__room,
         protected Workspace $__workspace,
+        protected Employee $__employee,
     ){
         parent::__construct();
     }
@@ -48,13 +50,15 @@ class GeneralSettingController extends ApiController{
                 $employees = $this->EmployeeModel()->get();
                 $employee_datas = [];
                 foreach ($employees as $employee) {
-                    $card_identity = $employee->card_identity;
+                    $card_identity = $employee->prop_card_identity;
+                    $nik = $employee->people->prop_card_identity['nik'];
                     $employee_datas[] = [
                         'id' => null,
                         'reference_type' => 'Employee',
                         'reference_id' => $employee->id,
                         'name' => $employee->name,
                         'ihs_number' => $card_identity['ihs_number'] ?? null,
+                        'nik' => $nik ?? null,
                     ];
                 }
                 return $employee_datas;
@@ -86,7 +90,7 @@ class GeneralSettingController extends ApiController{
             $workspace->save();
             if (!isset($satu_sehat['ihs_number'])){
                 try {
-                    $this->__workspace->prepareStoreSatuSehatOrganization($workspace);
+                    $this->__workspace->prepareStoreSatuSehatOrganization($workspace,'sync');
                 } catch (\Throwable $th) {
                     throw $th;
                 }
@@ -122,7 +126,7 @@ class GeneralSettingController extends ApiController{
                                     'building_id' => $room->building_id,
                                     'room_model' => $room
                                 ])
-                            ,$room);
+                            ,$room,'sync');
                         } catch (\Throwable $th) {
                             throw $th;
                         }
@@ -138,13 +142,22 @@ class GeneralSettingController extends ApiController{
                         'reference_id' => $practitioner['reference_id'],
                         'method' => 'GET',
                         'ihs_number' => $practitioner['ihs_number'] ?? null,
+                        'nik'        => $practitioner['nik'] ?? null,
                         'env_type' => config('satu-sehat.environment.env_type'),
                     ];
                     $employee = $this->EmployeeModel()->findOrFail($practitioner['reference_id']);
-                    $card_identity = $employee->card_identity;
+                    $card_identity = $employee->prop_card_identity;
+                    $people = $employee->people;
                     $card_identity['ihs_number'] = $practitioner['ihs_number'];
-                    $employee->setAttribute('card_identity',$card_identity);
+                    $employee->setAttribute('prop_card_identity',$card_identity);
                     $employee->save();
+                    if (!isset($card_identity['ihs_number']) && isset($people->prop_card_identity['nik'])){
+                        try {
+                            $this->__employee->prepareStoreSatuSehatEmployee($employee,'sync');
+                        } catch (\Throwable $th) {
+                            throw $th;
+                        }
+                    }
                 }
             }
         }

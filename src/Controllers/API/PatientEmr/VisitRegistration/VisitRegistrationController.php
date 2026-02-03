@@ -85,12 +85,7 @@ class VisitRegistrationController extends EnvironmentController
     public function export(string $id)
     {
         // Load visit registration
-        $visitRegistration = $this->__visit_registration_schema
-            ->conditionals(function($query) use ($id) {
-                $query->where('id', $id);
-            })
-            ->showVisitRegistration();
-
+        $visitRegistration = $this->__visit_registration_schema->showVisitRegistration();
         if (!$visitRegistration) {
             return response()->json([
                 'message' => 'Visit registration not found'
@@ -98,7 +93,7 @@ class VisitRegistrationController extends EnvironmentController
         }
 
         // Store the visit registration model in the schema
-        $this->__visit_registration_schema->entityData($visitRegistration);
+        // $this->__visit_registration_schema->entityData($visitRegistration);
 
         // Call export via DataManagement trait
         $export = $this->__visit_registration_schema->export('VisitRegistrationEmr')->handle();
@@ -122,9 +117,7 @@ class VisitRegistrationController extends EnvironmentController
      */
     public function exportStatus(string $exportId)
     {
-        $export = \Hanafalah\LaravelSupport\Models\Export\Export::where('id', $exportId)
-            ->where('tenant_id', tenancy()->tenant->id)
-            ->firstOrFail();
+        $export = $this->ExportModel()->findOrFail($exportId);
 
         $response = [
             'id' => $export->id,
@@ -135,7 +128,7 @@ class VisitRegistrationController extends EnvironmentController
         ];
 
         if ($export->isCompleted() && $export->canDownload()) {
-            $response['download_url'] = route('patient-emr.exports.download', $exportId);
+            $response['download_url'] = route('api.patient-emr.exports.download', $exportId);
             $response['file_name'] = $export->file_name;
         }
 
@@ -150,13 +143,11 @@ class VisitRegistrationController extends EnvironmentController
      * Download export file.
      *
      * @param string $exportId Export ID
-     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse|\Illuminate\Http\JsonResponse
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
      */
     public function exportDownload(string $exportId)
     {
-        $export = \Hanafalah\LaravelSupport\Models\Export\Export::where('id', $exportId)
-            ->where('tenant_id', tenancy()->tenant->id)
-            ->firstOrFail();
+        $export = $this->ExportModel()->findOrFail($exportId);
 
         if (!$export->isCompleted()) {
             return response()->json([
@@ -171,10 +162,16 @@ class VisitRegistrationController extends EnvironmentController
             ], 404);
         }
 
-        return response()->download(
-            $export->getFullStoragePath(),
-            $export->file_name,
-            ['Content-Type' => 'application/pdf']
-        );
+        // Get presigned S3 URL (valid for 60 minutes)
+        $downloadUrl = $export->getDownloadUrl(60);
+
+        if (!$downloadUrl) {
+            return response()->json([
+                'message' => 'Failed to generate download URL'
+            ], 500);
+        }
+
+        // Redirect to presigned S3 URL
+        return redirect()->away($downloadUrl);
     }
 }

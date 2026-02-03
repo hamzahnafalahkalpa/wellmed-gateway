@@ -23,9 +23,9 @@ use Projects\WellmedGateway\Controllers\API\PatientEmr\VisitRegistration\{
 Route::apiResource('/visit-registration',VisitRegistrationController::class)->parameters(['visit-registration' => 'id']);
 
 // Export routes
-Route::post('/visit-registration/{id}/export', [VisitRegistrationController::class, 'export'])->name('patient-emr.visit-registration.export');
-Route::get('/exports/{exportId}/status', [VisitRegistrationController::class, 'exportStatus'])->name('patient-emr.exports.status');
-Route::get('/exports/{exportId}/download', [VisitRegistrationController::class, 'exportDownload'])->name('patient-emr.exports.download');
+Route::post('/visit-registration/{id}/export', [VisitRegistrationController::class, 'export'])->name('visit-registration.export');
+Route::get('/exports/{exportId}/status', [VisitRegistrationController::class, 'exportStatus'])->name('exports.status');
+Route::get('/exports/{exportId}/download', [VisitRegistrationController::class, 'exportDownload'])->name('exports.download');
 
 Route::group([
     "prefix" => "/visit-registration/{visit_registration_id}",
