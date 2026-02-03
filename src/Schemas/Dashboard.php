@@ -11,6 +11,32 @@ class Dashboard implements DashboardContract
 {
     protected $client;
     protected string $indexPattern = 'dashboard-metrics-*';
+    protected $color_map = [
+        'blue' => [
+            'gradient' => 'from-blue-500 to-cyan-400',
+            'bg_light' => 'bg-blue-50',
+            'text_color' => 'text-blue-600',
+            'border_color' => 'border-blue-200',
+        ],
+        'purple' => [
+            'gradient' => 'from-purple-500 to-pink-400',
+            'bg_light' => 'bg-purple-50',
+            'text_color' => 'text-purple-600',
+            'border_color' => 'border-purple-200',
+        ],
+        'emerald' => [
+            'gradient' => 'from-emerald-500 to-teal-400',
+            'bg_light' => 'bg-emerald-50',
+            'text_color' => 'text-emerald-600',
+            'border_color' => 'border-emerald-200',
+        ],
+        'orange' => [
+            'gradient' => 'from-orange-500 to-amber-400',
+            'bg_light' => 'bg-orange-50',
+            'text_color' => 'text-orange-600',
+            'border_color' => 'border-orange-200',
+        ]
+    ];
 
     public function __construct()
     {
@@ -34,7 +60,7 @@ class Dashboard implements DashboardContract
     public function getDashboardMetrics(array $params)
     {
         // Check if dummy data is enabled
-        if (env('DASHBOARD_USE_DUMMY_DATA', false)) {
+        if (false && env('DASHBOARD_USE_DUMMY_DATA', false)) {
             Log::info('Using dummy dashboard data', ['params' => $params]);
             return $this->getDummyDashboardData($params);
         }
@@ -219,9 +245,13 @@ class Dashboard implements DashboardContract
                     $this->formatStatistic('patients', 'Jumlah Pasien', 0, 0, 'mdi:account-group', 'blue'),
                     $this->formatStatistic('new-patients', 'Pasien Baru', 0, 0, 'mdi:account-plus', 'purple'),
                     $this->formatStatistic('revenue', 'Omzet', 0, 0, 'mdi:cash-multiple', 'emerald', true),
-                    $this->formatStatistic('unfinished', 'Tindakan Dipesankan', 0, 0, 'mdi:clipboard-list', 'orange'),
+                    $this->formatStatistic('treatment', 'Tindakan Dipesankan', 0, 0, 'mdi:clipboard-list', 'orange'),
                 ],
-                'pending_items' => [],
+                'pending_items' => [
+                    $this->formatPendingItem('unsigned-visits', '0 unsigned visits', 0, 'mdi:file-document-edit-outline', 'text-orange-600','/patient-emr/unsigned-visits'),
+                    $this->formatPendingItem('unsynced-patients', '0 belum tersinkronisasi satu sehat', 0, 'mdi:sync-alert', 'text-red-600','/satu-sehat/dashboard'),
+                    $this->formatPendingItem('incomplete-diagnosis', '0 tanpa ICD', 0, 'mdi:alert-circle', 'text-amber-600','/patient-emr/incomplete-diagnosis'),
+                ],
                 'queue_services' => [],
                 'diagnosis_treatment' => [],
                 'meta' => [
@@ -288,33 +318,7 @@ class Dashboard implements DashboardContract
         $changeType = $change >= 0 ? 'increase' : 'decrease';
         $percentageChange = $count > 0 ? round(($change / ($count - $change)) * 100, 1) : 0;
 
-        $colorMap = [
-            'blue' => [
-                'gradient' => 'from-blue-500 to-cyan-400',
-                'bg_light' => 'bg-blue-50',
-                'text_color' => 'text-blue-600',
-                'border_color' => 'border-blue-200',
-            ],
-            'purple' => [
-                'gradient' => 'from-purple-500 to-pink-400',
-                'bg_light' => 'bg-purple-50',
-                'text_color' => 'text-purple-600',
-                'border_color' => 'border-purple-200',
-            ],
-            'emerald' => [
-                'gradient' => 'from-emerald-500 to-teal-400',
-                'bg_light' => 'bg-emerald-50',
-                'text_color' => 'text-emerald-600',
-                'border_color' => 'border-emerald-200',
-            ],
-            'orange' => [
-                'gradient' => 'from-orange-500 to-amber-400',
-                'bg_light' => 'bg-orange-50',
-                'text_color' => 'text-orange-600',
-                'border_color' => 'border-orange-200',
-            ],
-        ];
-
+        $colorMap = $this->color_map;
         $colors = $colorMap[$color] ?? $colorMap['blue'];
 
         $stat = [
@@ -337,6 +341,37 @@ class Dashboard implements DashboardContract
             $stat['is_currency'] = true;
         }
 
+        return $stat;
+    }
+
+    /**
+     * Format a single pending items card for FE
+     *
+     * @param string $id
+     * @param string $label
+     * @param int $count
+     * @param string $icon
+     * @param string $color
+     * @param string $link
+     * @return array
+     */
+    protected function formatPendingItem(
+        string $id,
+        string $label,
+        int $count,
+        string $icon,
+        string $color,
+        string $link,
+    ): array {
+        $stat = [
+            'id' => $id,
+            'label' => $label,
+            'change_label' => 'Dari kemarin', 
+            'count' => $count,
+            'icon' => $icon, 
+            'color' => $color, 
+            'link' => $link
+        ];
         return $stat;
     }
 
@@ -553,7 +588,7 @@ class Dashboard implements DashboardContract
                     'is_currency' => true,
                 ],
                 [
-                    'id' => 'unfinished',
+                    'id' => 'treatment',
                     'label' => 'Tindakan Dipesankan',
                     'count' => 31,
                     'change' => 8,
