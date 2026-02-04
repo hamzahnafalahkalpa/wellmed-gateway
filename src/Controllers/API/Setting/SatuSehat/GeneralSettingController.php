@@ -27,7 +27,7 @@ class GeneralSettingController extends ApiController{
         $satu_sehat = $integration['satu_sehat']['general'] ?? [];
         return [
             'organization' => [
-                'organization_id' => $satu_sehat['organization_id'] ?? null,
+                'organization_id' => $satu_sehat['organization_id'] ?? $satu_sehat['ihs_number'],
                 'client_id' => $satu_sehat['client_id'] ?? null,
                 'client_secret' => $satu_sehat['client_secret'] ?? null,
                 'ihs_number' => $satu_sehat['ihs_number'] ?? null,
