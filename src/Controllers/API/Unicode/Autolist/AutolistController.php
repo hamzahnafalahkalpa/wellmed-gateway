@@ -189,7 +189,23 @@ class AutolistController extends ApiController{
                     }
                 });
             break;
+            case 'Workspace':
+                if (isset(request()->is_satu_sehat_integration) && isset(request()->id)){
+                    request()->merge([
+                        'type' => 'find'
+                    ]);
+                    $result = $this->callAutolist($morph);
+                    return $result['integration']['satu_sehat'];
+                }
+            break;
             case 'Patient':
+                if (isset(request()->is_satu_sehat_integration) && isset(request()->id)){
+                    request()->merge([
+                        'type' => 'find'
+                    ]);
+                    $result = $this->callAutolist($morph);
+                    return $result['integration']['satu_sehat'];
+                }
                 if (isset(request()->credential)){
                     $credential = request()->credential;
                     switch ($credential) {
