@@ -266,6 +266,7 @@ class Dashboard implements DashboardContract
                 ],
                 'queue_services' => [],
                 'diagnosis_treatment' => [],
+                'trends' => $this->getDefaultTrendsResponse($params['search_type'] ?? 'daily'),
                 'meta' => [
                     'period_type' => $params['search_type'],
                     'message' => 'No data available for the specified period',
@@ -294,6 +295,7 @@ class Dashboard implements DashboardContract
             'billing' => $hit['billing'] ?? [],
             'queue_services' => $hit['queue_services'] ?? [],
             'diagnosis_treatment' => $hit['diagnosis_treatment'] ?? [],
+            'trends' => $hit['trends'] ?? $this->getDefaultTrendsResponse($params['search_type'] ?? 'daily'),
             'meta' => [
                 'period_type' => $hit['period_type'] ?? $params['search_type'],
                 'timestamp' => $hit['timestamp'] ?? $now->toIso8601String(),
@@ -524,6 +526,7 @@ class Dashboard implements DashboardContract
                 'pending_items' => $data['pending_items'] ?? [],
                 'queue_services' => $data['queue_services'] ?? [],
                 'diagnosis_treatment' => $data['diagnosis_treatment'] ?? [],
+                'trends' => [],
 
                 // Metadata for querying
                 'period_type' => $periodType,
@@ -1146,6 +1149,84 @@ class Dashboard implements DashboardContract
                 return 'Berdasarkan 7 hari terakhir';
             case 'weekly':
                 return 'Berdasarkan 7 minggu terakhir';
+            case 'monthly':
+                return 'Berdasarkan 12 bulan terakhir';
+            case 'yearly':
+                return 'Berdasarkan 5 tahun terakhir';
+            default:
+                return '';
+        }
+    }
+
+    /**
+     * Get default trends response for when no data is available
+     * Shows visits per medic service/poliklinik
+     *
+     * @param string $periodType
+     * @return array
+     */
+    protected function getDefaultTrendsResponse(string $periodType): array
+    {
+        $now = Carbon::now();
+        $labels = ['Kunjungan'];
+
+        // Generate labels based on period type
+        switch ($periodType) {
+            case 'daily':
+                // 7 days to past
+                for ($i = 6; $i >= 0; $i--) {
+                    $labels[] = $now->copy()->subDays($i)->format('d M');
+                }
+                break;
+
+            case 'weekly':
+                // 4 weeks from now to past
+                for ($i = 3; $i >= 0; $i--) {
+                    $labels[] = 'W' . $now->copy()->subWeeks($i)->format('W');
+                }
+                break;
+
+            case 'monthly':
+                // 12 months from now to past
+                for ($i = 11; $i >= 0; $i--) {
+                    $labels[] = $now->copy()->subMonths($i)->format('M Y');
+                }
+                break;
+
+            case 'yearly':
+                // 5 years from now to past
+                for ($i = 4; $i >= 0; $i--) {
+                    $labels[] = $now->copy()->subYears($i)->format('Y');
+                }
+                break;
+        }
+
+        return [
+            'services' => [],
+            'dataset' => [
+                'source' => [$labels]
+            ],
+            'title' => 'Tren Kunjungan per Poliklinik',
+            'subtitle' => $this->getTrendSubtitle($periodType),
+            'chart_type' => 'line',
+            'series_layout' => 'row',
+            'period_type' => $periodType
+        ];
+    }
+
+    /**
+     * Get trend subtitle based on period type
+     *
+     * @param string $periodType
+     * @return string
+     */
+    protected function getTrendSubtitle(string $periodType): string
+    {
+        switch ($periodType) {
+            case 'daily':
+                return 'Berdasarkan 7 hari terakhir';
+            case 'weekly':
+                return 'Berdasarkan 4 minggu terakhir';
             case 'monthly':
                 return 'Berdasarkan 12 bulan terakhir';
             case 'yearly':
