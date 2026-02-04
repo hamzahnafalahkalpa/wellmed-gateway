@@ -215,6 +215,35 @@ if (config('app.env') !== 'production') {
                 'family_name' => $i['exam']['family_name'] ?? '-',
                 'name' => $i['exam']['name'] ?? '-',
             ])->toArray(),
+            'physical_examinations' => (function() use ($emr) {
+                $physicalExam = $emr['PhysicalExamination']['exam'] ?? null;
+                if (!$physicalExam) return [];
+
+                $examinations = [];
+                $formTypes = [
+                    'female_body_form' => 'Head to Toe',
+                    'male_body_form' => 'Head to Toe',
+                    'female_muscle_form' => 'Head to Toe (Muskular)',
+                    'male_muscle_form' => 'Head to Toe (Muskular)',
+                    'odontogram' => 'Odontogram',
+                ];
+
+                foreach ($formTypes as $key => $defaultLabel) {
+                    if (isset($physicalExam[$key]) && !empty($physicalExam[$key]['asset_url'])) {
+                        $form = $physicalExam[$key];
+                        $examinations[] = [
+                            'type' => $key,
+                            'label' => $form['label'] ?? $defaultLabel,
+                            'morph' => $form['morph'] ?? null,
+                            'image_url' => $form['asset_url'],
+                            'data' => $form['data'] ?? [],
+                            'has_annotations' => !empty($form['data']),
+                        ];
+                    }
+                }
+
+                return $examinations;
+            })(),
         ];
 
         // Generate PDF
