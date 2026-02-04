@@ -39,4 +39,13 @@ class BillingController extends EnvironmentController{
     public function destroy(DeleteRequest $request){
         return $this->deleteBilling();
     }
+
+    public function kwitansi(){
+        $billing = $this->BillingModel()->findOrFail(request()->billing_id);
+        request()->merge([
+            'transaction_id' => $billing->has_transaction_id,
+            'billing_model' => $billing
+        ]);
+        return parent::kwitansi();
+    }
 }
