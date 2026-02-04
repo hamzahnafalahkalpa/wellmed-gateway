@@ -25,7 +25,11 @@ class PointOfSaleController extends EnvironmentController{
     }
 
     public function index(ViewRequest $request){
-        return $this->getPosTransactionPaginate();
+        return $this->getPosTransactionPaginate(function($query){
+            $query->whereHas('paymentSummary',function($query){
+                $query->where('debt','>',0);
+            });
+        });
     }
 
     public function show(ShowRequest $request){
