@@ -237,8 +237,14 @@ class AutolistController extends ApiController{
                         }
                     }
                     return $result;
-                }else{
-                    return $this->callAutolist($morph);
+                }else{                    
+                    return $this->callAutolist($morph,function($query){
+                        if (isset(request()->find_by_nik)){
+                            $query->whereHasMorph('reference',['People'],function($query){
+                                $query->where('props->prop_card_identity->nik',request()->find_by_nik)->limit(1);
+                            });
+                        }
+                    });
                 }
             break;
             case 'Employee':

@@ -248,7 +248,7 @@ class Dashboard implements DashboardContract
                     $this->formatStatistic('treatment', 'Tindakan Dipesankan', 0, 0, 'mdi:clipboard-list', 'orange'),
                 ],
                 'pending_items' => [
-                    $this->formatPendingItem('unsigned-visits', 'Unsigned visits', 0, 'mdi:file-document-edit-outline', 'text-orange-600','/patient-emr/unsigned-visits'),
+                    $this->formatPendingItem('unsigned-visits', 'Unsigned visits', 0, 'mdi:file-document-edit-outline', 'text-orange-600','/patient-emr/visit-registration?is_unsigned_visits=1'),
                     $this->formatPendingItem('unsynced-patients', 'Belum tersinkronisasi satu sehat', 0, 'mdi:sync-alert', 'text-red-600','/satu-sehat/dashboard'),
                     $this->formatPendingItem('incomplete-diagnosis', 'Tanpa ICD', 0, 'mdi:alert-circle', 'text-amber-600','/patient-emr/incomplete-diagnosis'),
                 ],
@@ -728,7 +728,7 @@ class Dashboard implements DashboardContract
                     'count' => 12,
                     'icon' => 'mdi:file-document-edit-outline',
                     'color' => 'text-orange-600',
-                    'link' => '/patient-emr/unsigned-visits',
+                    'link' => '/patient-emr/visit-registration?is_unsigned_visits=1',
                     'priority' => 'high',
                 ],
                 [

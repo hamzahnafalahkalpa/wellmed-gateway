@@ -9,13 +9,22 @@ use Projects\WellmedGateway\Requests\API\PatientEmr\Patient\VisitRegistration\{
 
 class VisitRegistrationController extends EnvironmentController
 {
-
     protected function commonConditional($query){
         $query->where('prop_visit_patient.patient_id',request()->patient_id);
     }
 
     public function index(ViewRequest $request){
-        return $this->getVisitRegistrationPaginate();
+        return $this->getVisitRegistrationPaginate(function($query){
+            $query->when(isset(request()->is_unsigned_visits),function($query){
+                $query->whereHas('visitExamination',function($query){
+                    $query->whereNull('sign_off_at');
+                });
+            })->when(isset(request()->is_incomplete_diagnosis),function($query){
+                $query->whereHas('visitExamination.',function($query){
+                    $query->whereNull('sign_off_at');
+                });
+            });
+        });
     }
 
     public function show(ShowRequest $request){
