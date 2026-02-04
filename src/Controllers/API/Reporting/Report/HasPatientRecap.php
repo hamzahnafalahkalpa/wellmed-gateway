@@ -87,7 +87,7 @@ trait HasPatientRecap{
             ],
             [
                 'label'          => 'Jenis Kelamin',
-                'key'            => 'people.gender',
+                'key'            => 'people.sex',
                 'type'           => 'InputText',
                 'component_name' => null,
                 'default_value'  => null,
@@ -127,7 +127,7 @@ trait HasPatientRecap{
             ["key"     => "people.phone_1","label"   => "Kontak 1"],
             ["key"     => "people.phone_2","label"   => "Kontak 2"],
             ["key"     => "people.age","label"   => "Usia"],
-            ["key"     => "people.gender","label"   => "Jenis Kelamin"],
+            ["key"     => "people.sex","label"   => "Jenis Kelamin"],
             ["key"     => "people.pob","label"   => "Tempat Lahir"],
             ["key"     => "people.dob","label"   => "Tanggal Lahir"]
         ];
