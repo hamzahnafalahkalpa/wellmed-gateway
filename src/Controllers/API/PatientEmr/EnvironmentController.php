@@ -13,12 +13,12 @@ use Hanafalah\ModulePharmacy\Contracts\Schemas\PharmacySale;
 use Hanafalah\ModuleSupport\Contracts\Schemas\Support;
 use Projects\WellmedBackbone\Contracts\Schemas\ModulePatient\{
     PractitionerEvaluation,
-    VisitExamination,
-    VisitPatient,
-    VisitRegistration
 };
 use Projects\WellmedGateway\Controllers\API\ApiController as ApiBaseController;
 use Hanafalah\LaravelSupport\Jobs\ElasticJob;
+use Projects\WellmedBackbone\Schemas\ModulePatient\VisitExamination;
+use Projects\WellmedBackbone\Schemas\ModulePatient\VisitPatient;
+use Projects\WellmedBackbone\Schemas\ModulePatient\VisitRegistration;
 
 class EnvironmentController extends ApiBaseController{
 

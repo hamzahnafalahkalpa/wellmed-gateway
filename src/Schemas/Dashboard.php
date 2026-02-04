@@ -248,9 +248,21 @@ class Dashboard implements DashboardContract
                     $this->formatStatistic('treatment', 'Tindakan Dipesankan', 0, 0, 'mdi:clipboard-list', 'orange'),
                 ],
                 'pending_items' => [
-                    $this->formatPendingItem('unsigned-visits', '0 unsigned visits', 0, 'mdi:file-document-edit-outline', 'text-orange-600','/patient-emr/unsigned-visits'),
-                    $this->formatPendingItem('unsynced-patients', '0 belum tersinkronisasi satu sehat', 0, 'mdi:sync-alert', 'text-red-600','/satu-sehat/dashboard'),
-                    $this->formatPendingItem('incomplete-diagnosis', '0 tanpa ICD', 0, 'mdi:alert-circle', 'text-amber-600','/patient-emr/incomplete-diagnosis'),
+                    $this->formatPendingItem('unsigned-visits', 'Unsigned visits', 0, 'mdi:file-document-edit-outline', 'text-orange-600','/patient-emr/unsigned-visits'),
+                    $this->formatPendingItem('unsynced-patients', 'Belum tersinkronisasi satu sehat', 0, 'mdi:sync-alert', 'text-red-600','/satu-sehat/dashboard'),
+                    $this->formatPendingItem('incomplete-diagnosis', 'Tanpa ICD', 0, 'mdi:alert-circle', 'text-amber-600','/patient-emr/incomplete-diagnosis'),
+                ],
+                'cashier' => [
+                    $this->formatCashier('revenue', 'Omzet', 0, 0, 'mdi:cash-multiple', 'emerald',true),
+                    $this->formatCashier('unpaid', 'Jumlah Belum Dibayar', 0, 0, 'mdi:alert-circle', 'red',true),
+                    $this->formatCashier('total-transactions', 'Jumlah Transaksi', 0, 0, 'mdi:receipt-text', 'blue'),
+                    $this->formatCashier('pending', 'Jumlah Pending', 0, 0, 'mdi:clock-alert', 'orange'),
+                ],
+                'billing' => [
+                    $this->formatBilling('total-billing', 'Total Billing', 0, 0, 'mdi:receipt-text', 'blue'),
+                    $this->formatBilling('unpaid-billing', 'Billing Belum Lunas', 0, 0, 'mdi:clock-alert', 'orange'),
+                    $this->formatBilling('paid-billing', 'Billing Lunas', 0, 0, 'mdi:check-circle', 'green'),
+                    $this->formatBilling('total-revenue', 'Total Pendapatan', 0, 0, 'mdi:cash-multiple', 'emerald',true),
                 ],
                 'queue_services' => [],
                 'diagnosis_treatment' => [],
@@ -278,6 +290,8 @@ class Dashboard implements DashboardContract
             ],
             'statistics' => $hit['statistics'] ?? [],
             'pending_items' => $hit['pending_items'] ?? [],
+            'cashier' => $hit['cashier'] ?? [],
+            'billing' => $hit['billing'] ?? [],
             'queue_services' => $hit['queue_services'] ?? [],
             'diagnosis_treatment' => $hit['diagnosis_treatment'] ?? [],
             'meta' => [
@@ -339,6 +353,106 @@ class Dashboard implements DashboardContract
 
         if ($isCurrency) {
             $stat['is_currency'] = true;
+        }
+
+        return $stat;
+    }
+
+    /**
+     * Format a single statistic card for FE
+     *
+     * @param string $id
+     * @param string $label
+     * @param int $count
+     * @param int $change
+     * @param string $icon
+     * @param string $color
+     * @param bool $isCurrency
+     * @return array
+     */
+    protected function formatCashier(
+        string $id,
+        string $label,
+        int $count,
+        int $change,
+        string $icon,
+        string $color,
+        bool $isCurrency = false
+    ): array {
+        $changeType = $change >= 0 ? 'increase' : 'decrease';
+        $percentageChange = $count > 0 ? round(($change / ($count - $change)) * 100, 1) : 0;
+
+        $colorMap = $this->color_map;
+        $colors = $colorMap[$color] ?? $colorMap['blue'];
+
+        $stat = [
+            'id' => $id,
+            'label' => $label,
+            'count' => $count,
+            'change' => abs($change),
+            'changeType' => $changeType,
+            'percentage_change' => abs($percentageChange),
+            'changeLabel' => 'Dari kemarin',
+            'icon' => $icon,
+            'color' => $color,
+            'gradient' => $colors['gradient'],
+            'bgLight' => $colors['bg_light'],
+            'textColor' => $colors['text_color'],
+            'borderColor' => $colors['border_color'],
+        ];
+
+        if ($isCurrency) {
+            $stat['isCurrency'] = true;
+        }
+
+        return $stat;
+    }
+
+    /**
+     * Format a single statistic card for FE
+     *
+     * @param string $id
+     * @param string $label
+     * @param int $count
+     * @param int $change
+     * @param string $icon
+     * @param string $color
+     * @param bool $isCurrency
+     * @return array
+     */
+    protected function formatBilling(
+        string $id,
+        string $label,
+        int $count,
+        int $change,
+        string $icon,
+        string $color,
+        bool $isCurrency = false
+    ): array {
+        $changeType = $change >= 0 ? 'increase' : 'decrease';
+        $percentageChange = $count > 0 ? round(($change / ($count - $change)) * 100, 1) : 0;
+
+        $colorMap = $this->color_map;
+        $colors = $colorMap[$color] ?? $colorMap['blue'];
+
+        $stat = [
+            'id' => $id,
+            'label' => $label,
+            'count' => $count,
+            'change' => abs($change),
+            'changeType' => $changeType,
+            'percentage_change' => abs($percentageChange),
+            'changeLabel' => 'Dari kemarin',
+            'icon' => $icon,
+            'color' => $color,
+            'gradient' => $colors['gradient'],
+            'bgLight' => $colors['bg_light'],
+            'textColor' => $colors['text_color'],
+            'borderColor' => $colors['border_color'],
+        ];
+
+        if ($isCurrency) {
+            $stat['isCurrency'] = true;
         }
 
         return $stat;
