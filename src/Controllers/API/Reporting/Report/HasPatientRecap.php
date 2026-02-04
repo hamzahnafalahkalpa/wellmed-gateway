@@ -45,56 +45,56 @@ trait HasPatientRecap{
                 'options'        => [
                 ]
             ],
-            [
-                'label'          => 'Jenis Pasien',
-                'key'            => 'patient_type.name',
-                'type'           => 'InputText',
-                'component_name' => null,
-                'default_value'  => null,
-                'attribute'      => null,
-                'options'        => [
-                ]
-            ],
-            [
-                'label'          => 'Kontak 1',
-                'key'            => 'people.phone_1',
-                'type'           => 'InputText',
-                'component_name' => null,
-                'default_value'  => null,
-                'attribute'      => null,
-                'options'        => [
-                ]
-            ],
-            [
-                'label'          => 'Kontak 2',
-                'key'            => 'people.phone_2',
-                'type'           => 'InputText',
-                'component_name' => null,
-                'default_value'  => null,
-                'attribute'      => null,
-                'options'        => [
-                ]
-            ],
-            [
-                'label'          => 'Usia',
-                'key'            => 'people.age',
-                'type'           => 'InputText',
-                'component_name' => null,
-                'default_value'  => null,
-                'attribute'      => null,
-                'options'        => [
-                ]
-            ],
-            [
-                'label'          => 'Jenis Kelamin',
-                'key'            => 'people.sex',
-                'type'           => 'InputText',
-                'component_name' => null,
-                'default_value'  => null,
-                'attribute'      => null,
-                'options'        => [
-                ]
-            ],
+            // [
+            //     'label'          => 'Jenis Pasien',
+            //     'key'            => 'patient_type.name',
+            //     'type'           => 'InputText',
+            //     'component_name' => null,
+            //     'default_value'  => null,
+            //     'attribute'      => null,
+            //     'options'        => [
+            //     ]
+            // ],
+            // [
+            //     'label'          => 'Kontak 1',
+            //     'key'            => 'people.phone_1',
+            //     'type'           => 'InputText',
+            //     'component_name' => null,
+            //     'default_value'  => null,
+            //     'attribute'      => null,
+            //     'options'        => [
+            //     ]
+            // ],
+            // [
+            //     'label'          => 'Kontak 2',
+            //     'key'            => 'people.phone_2',
+            //     'type'           => 'InputText',
+            //     'component_name' => null,
+            //     'default_value'  => null,
+            //     'attribute'      => null,
+            //     'options'        => [
+            //     ]
+            // ],
+            // [
+            //     'label'          => 'Usia',
+            //     'key'            => 'people.age',
+            //     'type'           => 'InputText',
+            //     'component_name' => null,
+            //     'default_value'  => null,
+            //     'attribute'      => null,
+            //     'options'        => [
+            //     ]
+            // ],
+            // [
+            //     'label'          => 'Jenis Kelamin',
+            //     'key'            => 'people.sex',
+            //     'type'           => 'InputText',
+            //     'component_name' => null,
+            //     'default_value'  => null,
+            //     'attribute'      => null,
+            //     'options'        => [
+            //     ]
+            // ],
             [
                 'label'          => 'Tempat Lahir',
                 'key'            => 'people.pob',

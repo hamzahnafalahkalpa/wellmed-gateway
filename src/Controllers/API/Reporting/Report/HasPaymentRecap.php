@@ -17,30 +17,30 @@ trait HasPaymentRecap{
             [
             'label'          => 'Tanggal Laporan',
             'key'            => 'reported_at',
-            'type'           => 'InputText',
+            'type'           => 'DateRange',
             'component_name' => null,
             'default_value'  => null,
             'attribute'      => null,
             'options'        => []
             ],
-            [
-            'label'          => 'Kode Billing',
-            'key'            => 'billing_code',
-            'type'           => 'InputText',
-            'component_name' => null,
-            'default_value'  => null,
-            'attribute'      => null,
-            'options'        => []
-            ],
-            [
-            'label'          => 'No. RM',
-            'key'            => 'has_transaction.consument.reference.medical_record',
-            'type'           => 'InputText',
-            'component_name' => null,
-            'default_value'  => null,
-            'attribute'      => null,
-            'options'        => []
-            ],
+            // [
+            // 'label'          => 'Kode Billing',
+            // 'key'            => 'billing_code',
+            // 'type'           => 'InputText',
+            // 'component_name' => null,
+            // 'default_value'  => null,
+            // 'attribute'      => null,
+            // 'options'        => []
+            // ],
+            // [
+            // 'label'          => 'No. RM',
+            // 'key'            => 'has_transaction.consument.reference.medical_record',
+            // 'type'           => 'InputText',
+            // 'component_name' => null,
+            // 'default_value'  => null,
+            // 'attribute'      => null,
+            // 'options'        => []
+            // ],
             [
             'label'          => 'NIK',
             'key'            => 'has_transaction.consument.reference.people.card_identity.nik',
@@ -59,42 +59,42 @@ trait HasPaymentRecap{
             'attribute'      => null,
             'options'        => []
             ],
-            [
-            'label'          => 'Petugas',
-            'key'            => 'author.name',
-            'type'           => 'InputText',
-            'component_name' => null,
-            'default_value'  => null,
-            'attribute'      => null,
-            'options'        => []
-            ],
-            [
-            'label'          => 'Total Tagihan',
-            'key'            => 'amount',
-            'type'           => 'InputText',
-            'component_name' => null,
-            'default_value'  => null,
-            'attribute'      => null,
-            'options'        => []
-            ],
-            [
-            'label'          => 'Sisa Tagihan',
-            'key'            => 'debt',
-            'type'           => 'InputText',
-            'component_name' => null,
-            'default_value'  => null,
-            'attribute'      => null,
-            'options'        => []
-            ],
-            [
-            'label'          => 'Total Bayar',
-            'key'            => 'invoices.paid',
-            'type'           => 'InputText',
-            'component_name' => null,
-            'default_value'  => null,
-            'attribute'      => null,
-            'options'        => []
-            ]
+            // [
+            // 'label'          => 'Petugas',
+            // 'key'            => 'author.name',
+            // 'type'           => 'InputText',
+            // 'component_name' => null,
+            // 'default_value'  => null,
+            // 'attribute'      => null,
+            // 'options'        => []
+            // ],
+            // [
+            // 'label'          => 'Total Tagihan',
+            // 'key'            => 'amount',
+            // 'type'           => 'InputText',
+            // 'component_name' => null,
+            // 'default_value'  => null,
+            // 'attribute'      => null,
+            // 'options'        => []
+            // ],
+            // [
+            // 'label'          => 'Sisa Tagihan',
+            // 'key'            => 'debt',
+            // 'type'           => 'InputText',
+            // 'component_name' => null,
+            // 'default_value'  => null,
+            // 'attribute'      => null,
+            // 'options'        => []
+            // ],
+            // [
+            // 'label'          => 'Total Bayar',
+            // 'key'            => 'invoices.paid',
+            // 'type'           => 'InputText',
+            // 'component_name' => null,
+            // 'default_value'  => null,
+            // 'attribute'      => null,
+            // 'options'        => []
+            // ]
         ];
         $this->handleQueryParams($search,$response['filters']);
         $search = $this->__client->search($search);

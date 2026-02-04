@@ -32,27 +32,27 @@ trait HasMedicObservationRecap{
                 'attribute'      => null,
                 'options'        => []
             ],
-            [
-                'label'          => 'Jenis Kelamin',
-                'key'            => 'patient.people.sex',
-                'type'           => 'Select',
-                'component_name' => null,
-                'default_value'  => null,
-                'attribute'      => null,
-                'options'        => [
-                    ['label' => 'Laki-laki', 'value' => 'Male'],
-                    ['label' => 'Perempuan', 'value' => 'Female']
-                ]
-            ],
-            [
-                'label'          => 'Tanggal Dibuat',
-                'key'            => 'created_at',
-                'type'           => 'DateRange',
-                'component_name' => null,
-                'default_value'  => null,
-                'attribute'      => null,
-                'options'        => []
-            ]
+            // [
+            //     'label'          => 'Jenis Kelamin',
+            //     'key'            => 'patient.people.sex',
+            //     'type'           => 'Select',
+            //     'component_name' => null,
+            //     'default_value'  => null,
+            //     'attribute'      => null,
+            //     'options'        => [
+            //         ['label' => 'Laki-laki', 'value' => 'Male'],
+            //         ['label' => 'Perempuan', 'value' => 'Female']
+            //     ]
+            // ],
+            // [
+            //     'label'          => 'Tanggal Dibuat',
+            //     'key'            => 'created_at',
+            //     'type'           => 'DateRange',
+            //     'component_name' => null,
+            //     'default_value'  => null,
+            //     'attribute'      => null,
+            //     'options'        => []
+            // ]
         ];
         $this->handleQueryParams($search,$response['filters']);
         $search = $this->__client->search($search);
