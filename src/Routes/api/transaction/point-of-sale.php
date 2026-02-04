@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use Projects\WellmedGateway\Controllers\API\Transaction\PointOfSale\{
     Billing\Invoice\InvoiceController,
     Billing\BillingController,
+    DashboardController,
     PointOfSaleController
 };
 /*
@@ -18,6 +19,7 @@ use Projects\WellmedGateway\Controllers\API\Transaction\PointOfSale\{
 |
 */
 
+Route::get('/point-of-sale/dashboard',[DashboardController::class,'index'])->name('point-of-sale.dashboard.index');
 Route::apiResource('/point-of-sale',PointOfSaleController::class)->parameters(['point-of-sale' => 'id']);
 Route::group([
     "prefix" => "/point-of-sale/{transaction_id}",
