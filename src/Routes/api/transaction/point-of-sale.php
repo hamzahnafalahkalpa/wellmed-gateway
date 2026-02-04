@@ -20,12 +20,10 @@ use Projects\WellmedGateway\Controllers\API\Transaction\PointOfSale\{
 */
 
 Route::get('/point-of-sale/dashboard',[DashboardController::class,'index'])->name('point-of-sale.dashboard.index');
-Route::apiResource('/point-of-sale',PointOfSaleController::class)->parameters(['point-of-sale' => 'id']);
 Route::group([
     "prefix" => "/point-of-sale/{transaction_id}",
     'as' => 'point-of-sale.show.'
 ],function(){
-    Route::apiResource('/billing',BillingController::class)->parameters(['billing' => 'id']);
     Route::group([
         "prefix" => "/billing/{billing_id}",
         'as' => 'billing.show.'
@@ -33,4 +31,6 @@ Route::group([
         Route::get('/kwitansi',[BillingController::class,'kwitansi'])->name('kwitansi');
         Route::apiResource('/invoice',InvoiceController::class)->parameters(['invoice' => 'id']);
     });
+    Route::apiResource('/billing',BillingController::class)->parameters(['billing' => 'id']);
 });
+Route::apiResource('/point-of-sale',PointOfSaleController::class)->parameters(['point-of-sale' => 'id']);
