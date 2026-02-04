@@ -22,6 +22,7 @@ Route::group([
     "prefix" => "/frontline/{visit_examination_id}",
     "as"     => "frontline.show.",
 ],function() {
+    Route::put('/examination/{type}',[ExaminationController::class,'update'])->name('examination.update');
     Route::post('/examination',[ExaminationController::class,'store'])->name('examination.store');
     Route::apiResource('/{morph}/assessment',AssessmentController::class)->parameters(['assessment' => 'id'])->only(['store','show','index']);
 });

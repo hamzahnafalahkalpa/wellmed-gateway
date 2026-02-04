@@ -19,11 +19,11 @@ class ExaminationController extends EnvironmentController
         $visit_examination->is_prescription_completed = true;
         $visit_examination->save();
         if (!isset($visit_examination->pharmacySale)) {    
-            request()->merge([
-                'reference_type' => 'VisitExamination',
-                'visit_examination_model' => $visit_examination,
-            ]);        
-            return $this->__pharmacy_sale_schema->storePharmacySale();
+            // request()->merge([
+            //     'reference_type' => 'VisitExamination',
+            //     'visit_examination_model' => $visit_examination,
+            // ]);        
+            // return $this->__pharmacy_sale_schema->storePharmacySale();
         }
         return [];
     }
