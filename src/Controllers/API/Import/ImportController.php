@@ -20,7 +20,6 @@ class ImportController extends ApiController{
                     ], 400);
             }
         } catch (\Throwable $th) {
-            dd($th->getMessage());
             throw $th;
         }
         return response()->json([

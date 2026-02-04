@@ -21,7 +21,6 @@ class XenditController extends ApiController{
                 'json' => request()->all()
             ]);
         } catch (\Exception $e) {
-            dd($e->getMessage());
             \Log::channel('xendit')->error('Backbone: Failed to forward to HQ', [
                 'error' => $e->getMessage()
             ]);

@@ -27,7 +27,6 @@ class AddTenantController extends ApiController{
             // ];
             dispatch(new AddTenantJob($data))->onQueue('installation')->onConnection('rabbitmq');
         } catch (\Throwable $th) {
-            dd($th->getMessage());
             throw $th;
         }
         return response()->json([

@@ -50,7 +50,7 @@ class VisitRegistrationController extends EnvironmentController
                 case 'DPJP':
                     if (!isset(request()->practitioner_id)) throw new \Exception('Practitioner id is required');
                     $pracitioner_evaluation = $visit_registration_model->practitionerEvaluation;
-                    $pracitioner_evaluation->delete();
+                    if (isset($pracitioner_evaluation)) $pracitioner_evaluation->delete();
                     
                     $employee = $this->EmployeeModel()->findOrFail(request()->practitioner_id);
                     app(config('app.contracts.PractitionerEvaluation'))->prepareStorePractitionerEvaluation($this->requestDTO(
@@ -65,7 +65,13 @@ class VisitRegistrationController extends EnvironmentController
                             'is_commit' => false
                         ]
                     ));
-                    $visit_registration_model->load('practitionerEvaluation');
+                    $visit_registration_model->load(['practitionerEvaluation']);
+                    // $visit_examination_model = $visit_registration_model->visitExamination()->orderBy('created_at','desc')->limit(1)->first();
+                    // if (isset($visit_examination_model)){
+                    //     $visit_registration_model->load($visit_registration_model->showUsingRelation());
+                    //     $visit_examination_model->setAttribute('prop_visit_registration',$visit_registration_model->toShowApi()->resolve());
+                    //     $visit_examination_model->save();
+                    // }
                 break;
             }
             return $this->__visit_registration_schema->showVisitRegistration($visit_registration_model);

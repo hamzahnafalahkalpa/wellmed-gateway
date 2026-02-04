@@ -9,6 +9,13 @@ use Projects\WellmedGateway\Controllers\API\PatientEmr\VisitExamination\Environm
 
 class VisitExaminationController extends EnvironmentController
 {
+    protected function commonRequest(){
+        parent::commonRequest();
+        request()->merge([
+            'search_visit_registration_id' => request()->visit_registration_id
+        ]);
+    }
+
     public function index(ViewRequest $request){
         return $this->getVisitExaminationPaginate();
     }
