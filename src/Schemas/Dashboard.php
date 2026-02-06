@@ -4,15 +4,19 @@ namespace Projects\WellmedGateway\Schemas;
 
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
+use Hanafalah\ApiHelper\Concerns\HasDashboardMetricsDefaults;
 use Projects\WellmedGateway\Contracts\Schemas\Dashboard as DashboardContract;
 
 /**
  * Dashboard Schema - Read-only access to dashboard metrics from Elasticsearch
  *
  * This class only handles READING metrics. Writing is done by backbone's DashboardMetricsService.
+ * When no data exists for the requested period, it creates a default document.
  */
 class Dashboard implements DashboardContract
 {
+    use HasDashboardMetricsDefaults;
+
     protected $client;
     protected string $indexPrefix = 'dashboard-metrics';
 
@@ -29,7 +33,8 @@ class Dashboard implements DashboardContract
     }
 
     /**
-     * Get dashboard metrics from Elasticsearch
+     * Get dashboard metrics from Elasticsearch.
+     * Creates default document if it doesn't exist.
      */
     public function getDashboardMetrics(array $params): array
     {
@@ -37,16 +42,47 @@ class Dashboard implements DashboardContract
             throw new \Exception('Elasticsearch is not enabled or available');
         }
 
+        $periodType = $params['search_type'] ?? self::PERIOD_DAILY;
+        $tenant_model = tenancy()->tenant;
+        $tenantId = $params['search_tenant_id'] ?? $tenant_model?->getKey() ?? null;
+        $workspaceId = $params['search_workspace_id'] ?? $tenant_model?->reference_id ?? null;
+
+        if (!$tenantId || !$workspaceId) {
+            throw new \Exception('Tenant ID and Workspace ID are required');
+        }
+
         try {
+            $this->ensureIndexExists($periodType);
+
             $response = $this->client->search([
-                'index' => $this->getIndexName($params['search_type'] ?? 'daily'),
+                'index' => $this->getIndexName($periodType),
                 'body' => $this->buildQuery($params)
             ]);
 
             $responseArray = $response->asArray();
-            return $this->formatResponse($responseArray, $params);
+
+            // If no data found, create default document
+            if (empty($responseArray['hits']['hits'])) {
+                $timestamp = $this->getTimestampFromParams($params);
+                $this->createDefaultDocument($periodType, (int) $tenantId, $workspaceId, $timestamp);
+
+                // Return the default response
+                return $this->getDefaultDashboardResponse($periodType, $timestamp, $params);
+            }
+
+            return $this->formatDashboardResponse($responseArray, $params);
 
         } catch (\Exception $e) {
+            // Check if index doesn't exist error
+            if (str_contains($e->getMessage(), 'index_not_found_exception') ||
+                str_contains($e->getMessage(), 'no such index')) {
+                $this->ensureIndexExists($periodType);
+                $timestamp = $this->getTimestampFromParams($params);
+                $this->createDefaultDocument($periodType, (int) $tenantId, $workspaceId, $timestamp);
+
+                return $this->getDefaultDashboardResponse($periodType, $timestamp, $params);
+            }
+
             Log::error('Dashboard metrics query failed', [
                 'error' => $e->getMessage(),
                 'params' => $params
@@ -61,15 +97,15 @@ class Dashboard implements DashboardContract
     protected function buildQuery(array $params): array
     {
         $must = [
-            ['term' => ['period_type' => $params['search_type'] ?? 'daily']]
+            ['term' => ['period_type' => $params['search_type'] ?? self::PERIOD_DAILY]]
         ];
 
         if (!empty($params['search_tenant_id'])) {
-            $must[] = ['term' => ['tenant_id' => $params['search_tenant_id']]];
+            $must[] = ['term' => ['tenant_id' => (int) $params['search_tenant_id']]];
         }
 
         if (!empty($params['search_workspace_id'])) {
-            $must[] = ['term' => ['workspace_id' => $params['search_workspace_id']]];
+            $must[] = ['term' => ['workspace_id' => (int) $params['search_workspace_id']]];
         }
 
         // Date filtering based on search_type
@@ -87,13 +123,13 @@ class Dashboard implements DashboardContract
      */
     protected function addDateFilters(array &$must, array $params): void
     {
-        switch ($params['search_type'] ?? 'daily') {
-            case 'daily':
+        switch ($params['search_type'] ?? self::PERIOD_DAILY) {
+            case self::PERIOD_DAILY:
                 if (!empty($params['search_date'])) {
                     $must[] = ['term' => ['date' => Carbon::parse($params['search_date'])->format('Y-m-d')]];
                 }
                 break;
-            case 'weekly':
+            case self::PERIOD_WEEKLY:
                 if (!empty($params['search_year'])) {
                     $must[] = ['term' => ['year' => (int) $params['search_year']]];
                 }
@@ -101,7 +137,7 @@ class Dashboard implements DashboardContract
                     $must[] = ['term' => ['week' => (int) $params['search_week']]];
                 }
                 break;
-            case 'monthly':
+            case self::PERIOD_MONTHLY:
                 if (!empty($params['search_year'])) {
                     $must[] = ['term' => ['year' => (int) $params['search_year']]];
                 }
@@ -109,136 +145,11 @@ class Dashboard implements DashboardContract
                     $must[] = ['term' => ['month' => (int) $params['search_month']]];
                 }
                 break;
-            case 'yearly':
+            case self::PERIOD_YEARLY:
                 if (!empty($params['search_year'])) {
                     $must[] = ['term' => ['year' => (int) $params['search_year']]];
                 }
                 break;
         }
-    }
-
-    /**
-     * Get Elasticsearch index name (matches backbone's naming)
-     */
-    protected function getIndexName(string $periodType): string
-    {
-        $prefix = config('elasticsearch.prefix', 'development');
-        $separator = config('elasticsearch.separator', '.');
-        return $prefix . $separator . $this->indexPrefix . '-' . $periodType;
-    }
-
-    /**
-     * Format Elasticsearch response - returns data as-is from ES with fallback defaults
-     */
-    protected function formatResponse(array $response, array $params): array
-    {
-        $now = Carbon::now();
-        $periodType = $params['search_type'] ?? 'daily';
-
-        // No data found - return defaults
-        if (empty($response['hits']['hits'])) {
-            return $this->getDefaultResponse($periodType, $now);
-        }
-
-        $hit = $response['hits']['hits'][0]['_source'];
-
-        // Return ES data with fallbacks for missing fields
-        return [
-            'motivational_stats' => $hit['motivational_stats'] ?? $this->getDefaultMotivationalStats(),
-            'statistics' => $hit['statistics'] ?? [],
-            'pending_items' => $hit['pending_items'] ?? [],
-            'cashier' => $hit['cashier'] ?? [],
-            'billing' => $hit['billing'] ?? [],
-            'queue_services' => $hit['queue_services'] ?? [],
-            'diagnosis_treatment' => $hit['diagnosis_treatment'] ?? [],
-            'workspace_integrations' => $hit['workspace_integrations'] ?? [],
-            'trends' => $hit['trends'] ?? $this->getDefaultTrends($periodType, $now),
-            'meta' => [
-                'period_type' => $hit['period_type'] ?? $periodType,
-                'timestamp' => $hit['timestamp'] ?? $now->toIso8601String(),
-                'date' => $hit['date'] ?? $now->format('Y-m-d'),
-                'year' => $hit['year'] ?? $now->year,
-                'month' => $hit['month'] ?? $now->month,
-                'week' => $hit['week'] ?? (int) $now->format('W'),
-                'day' => $hit['day'] ?? $now->day,
-                'data_source' => 'elasticsearch',
-                'aggregation_period' => $hit['aggregation_period'] ?? null,
-            ],
-        ];
-    }
-
-    /**
-     * Get default response when no data exists
-     */
-    protected function getDefaultResponse(string $periodType, Carbon $now): array
-    {
-        return [
-            'motivational_stats' => $this->getDefaultMotivationalStats(),
-            'statistics' => [],
-            'pending_items' => [],
-            'cashier' => [],
-            'billing' => [],
-            'queue_services' => [],
-            'diagnosis_treatment' => [],
-            'workspace_integrations' => [],
-            'trends' => $this->getDefaultTrends($periodType, $now),
-            'meta' => [
-                'period_type' => $periodType,
-                'message' => 'No data available for the specified period',
-                'timestamp' => $now->toIso8601String(),
-                'date' => $now->format('Y-m-d'),
-                'data_source' => 'elasticsearch',
-            ],
-        ];
-    }
-
-    protected function getDefaultMotivationalStats(): array
-    {
-        return [
-            'current' => 0,
-            'target' => 0,
-            'percentage' => 0,
-            'remaining' => 0,
-            'growth' => 0,
-            'growth_percentage' => 0,
-        ];
-    }
-
-    protected function getDefaultTrends(string $periodType, Carbon $now): array
-    {
-        $labels = ['Kunjungan'];
-        $counts = match ($periodType) {
-            'daily' => 7,
-            'weekly' => 4,
-            'monthly' => 12,
-            'yearly' => 5,
-            default => 7
-        };
-
-        for ($i = $counts - 1; $i >= 0; $i--) {
-            $labels[] = match ($periodType) {
-                'daily' => $now->copy()->subDays($i)->format('d M'),
-                'weekly' => 'W' . $now->copy()->subWeeks($i)->format('W'),
-                'monthly' => $now->copy()->subMonths($i)->format('M Y'),
-                'yearly' => $now->copy()->subYears($i)->format('Y'),
-                default => $now->copy()->subDays($i)->format('d M')
-            };
-        }
-
-        return [
-            'services' => [],
-            'dataset' => ['source' => [$labels]],
-            'title' => 'Tren Kunjungan per Poliklinik',
-            'subtitle' => match ($periodType) {
-                'daily' => 'Berdasarkan 7 hari terakhir',
-                'weekly' => 'Berdasarkan 4 minggu terakhir',
-                'monthly' => 'Berdasarkan 12 bulan terakhir',
-                'yearly' => 'Berdasarkan 5 tahun terakhir',
-                default => ''
-            },
-            'chart_type' => 'line',
-            'series_layout' => 'row',
-            'period_type' => $periodType
-        ];
     }
 }

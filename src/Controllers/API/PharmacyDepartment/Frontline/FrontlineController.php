@@ -13,7 +13,13 @@ class FrontlineController extends EnvironmentController
         $query->whereHas('visitPatient',function($query){
             $query->flagIn('VisitPatient');
         })->where('props->is_has_prescription',true)
-        ->where('props->is_prescription_completed', false);
+        ->where('props->is_prescription_completed', call_user_func(function(){
+            if (isset(request()->is_prescription_completed) && request()->is_prescription_completed == 1){
+                return true;
+            }else{
+                return false;
+            }
+        }));
     }
 
     public function index(ViewRequest $request){

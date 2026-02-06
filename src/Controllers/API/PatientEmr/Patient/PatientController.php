@@ -78,20 +78,19 @@ class PatientController extends EnvironmentController{
         $bulks = [
             [
                 'index' => config('app.elasticsearch.indexes.patient.full_name'),
-                'data'  => [
-                    $patient
-                ]
+                'data'  => [$patient]
             ]
         ];
-        if (isset($patient['visit_examination'])){
-            $bulks = array_merge($bulks,$this->elasticForVisitPatient($patient['visit_examination']['visit_patient_id'],true));
+        if (isset($patient['visit_examination'])) {
+            $bulks = array_merge($bulks, $this->elasticForVisitPatient($patient['visit_examination']['visit_patient_id'], true));
         }
         dispatch(new ElasticJob([
             'type'  => 'BULK',
-            'datas' => [...$bulks]
+            'datas' => $bulks
         ]))
         ->onQueue('elasticsearch')
         ->onConnection('rabbitmq');
+
         return $patient;
     }
 

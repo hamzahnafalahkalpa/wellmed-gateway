@@ -20,9 +20,9 @@ class DocumentTypeExportController extends EnvironmentController{
                 request()->merge([
                     'morph' => 'InformedConsent'
                 ]);
-                $assessment = $this->__assessment_schema->conditionals(function($query){
-                    $this->commonConditional($query);
-                })->showAssessment();
+                $assessment = $this->AssessmentModel()->findOrFail(request()->id);
+                $assessment = $this->{$assessment->morph.'Model'}()->findOrFail($assessment->id);
+                $assessment = $assessment->toShowApi()->resolve();
                 $exam = &$assessment['exam'];
                 $dynamic_forms = $exam['dynamic_forms'] ?? [];
                 $forms = [];
