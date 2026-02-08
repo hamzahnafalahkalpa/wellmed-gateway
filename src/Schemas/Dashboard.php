@@ -4,7 +4,12 @@ namespace Projects\WellmedGateway\Schemas;
 
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
-use Hanafalah\ApiHelper\Concerns\HasDashboardMetricsDefaults;
+use Projects\WellmedBackbone\Services\Concerns\HasDashboardMetricsDefaults;
+use Projects\WellmedBackbone\Transformers\Dashboard\BillingTransformer;
+use Projects\WellmedBackbone\Transformers\Dashboard\CashierTransformer;
+use Projects\WellmedBackbone\Transformers\Dashboard\PendingItemTransformer;
+use Projects\WellmedBackbone\Transformers\Dashboard\StatisticTransformer;
+use Projects\WellmedBackbone\Transformers\Dashboard\WorkspaceIntegrationTransformer;
 use Projects\WellmedGateway\Contracts\Schemas\Dashboard as DashboardContract;
 
 /**
@@ -20,6 +25,12 @@ class Dashboard implements DashboardContract
     protected $client;
     protected string $indexPrefix = 'dashboard-metrics';
 
+    protected StatisticTransformer $statisticTransformer;
+    protected PendingItemTransformer $pendingItemTransformer;
+    protected CashierTransformer $cashierTransformer;
+    protected BillingTransformer $billingTransformer;
+    protected WorkspaceIntegrationTransformer $workspaceIntegrationTransformer;
+
     public function __construct()
     {
         if (config('elasticsearch.enabled', false)) {
@@ -30,6 +41,13 @@ class Dashboard implements DashboardContract
                 $this->client = null;
             }
         }
+
+        // Initialize transformers
+        $this->statisticTransformer = new StatisticTransformer();
+        $this->pendingItemTransformer = new PendingItemTransformer();
+        $this->cashierTransformer = new CashierTransformer();
+        $this->billingTransformer = new BillingTransformer();
+        $this->workspaceIntegrationTransformer = new WorkspaceIntegrationTransformer();
     }
 
     /**
@@ -151,5 +169,132 @@ class Dashboard implements DashboardContract
                 }
                 break;
         }
+    }
+
+    /**
+     * Override to apply transformers to the dashboard response.
+     *
+     * Transforms ES-only data to full frontend format with presentation data.
+     */
+    protected function formatDashboardResponse(array $response, array $params): array
+    {
+        $now = Carbon::now();
+        $periodType = $params['search_type'] ?? self::PERIOD_DAILY;
+
+        // No data found - return defaults with transformers applied
+        if (empty($response['hits']['hits'])) {
+            return $this->getDefaultDashboardResponse($periodType, $now, $params);
+        }
+
+        $hit = $response['hits']['hits'][0]['_source'];
+
+        // Get raw data with fallbacks
+        $statistics = $hit['statistics'] ?? $this->getDefaultStatistics($periodType);
+        $pendingItems = $hit['pending_items'] ?? $this->getDefaultPendingItems($periodType);
+        $cashier = $hit['cashier'] ?? $this->getDefaultCashier($periodType);
+        $billing = $hit['billing'] ?? $this->getDefaultBilling($periodType);
+        $workspaceIntegrations = $hit['workspace_integrations'] ?? $this->getDefaultWorkspaceIntegrations($periodType);
+
+        // Apply transformers for presentation data
+        return [
+            'motivational_stats' => $hit['motivational_stats'] ?? $this->getDefaultMotivationalStats(),
+            'statistics' => $this->statisticTransformer->transform($statistics, $periodType),
+            'pending_items' => $this->pendingItemTransformer->transform($pendingItems, $periodType),
+            'cashier' => $this->cashierTransformer->transform($cashier, $periodType),
+            'billing' => $this->billingTransformer->transform($billing, $periodType),
+            'queue_services' => $hit['queue_services'] ?? [],
+            'diagnosis_treatment' => $hit['diagnosis_treatment'] ?? [],
+            'workspace_integrations' => $this->workspaceIntegrationTransformer->transform($workspaceIntegrations, $periodType),
+            'trends' => $hit['trends'] ?? $this->getDefaultTrends($periodType, $now),
+            'meta' => [
+                'period_type' => $hit['period_type'] ?? $periodType,
+                'timestamp' => $hit['timestamp'] ?? $now->toIso8601String(),
+                'date' => $hit['date'] ?? $now->format('Y-m-d'),
+                'year' => $hit['year'] ?? $now->year,
+                'month' => $hit['month'] ?? $now->month,
+                'week' => $hit['week'] ?? (int) $now->format('W'),
+                'day' => $hit['day'] ?? $now->day,
+                'data_source' => 'elasticsearch',
+                'aggregation_period' => $hit['aggregation_period'] ?? null,
+            ],
+        ];
+    }
+
+    /**
+     * Override to apply transformers to default dashboard response.
+     * Fetches previous period data for intelligent defaults.
+     */
+    protected function getDefaultDashboardResponse(string $periodType, Carbon $now, array $params = []): array
+    {
+        // Get tenant context
+        $tenant_model = tenancy()->tenant;
+        $tenantId = $params['search_tenant_id'] ?? $tenant_model?->getKey() ?? null;
+        $workspaceId = $params['search_workspace_id'] ?? $tenant_model?->reference_id ?? null;
+
+        // Fetch previous period data for intelligent defaults
+        $previousData = null;
+        if ($tenantId && $workspaceId) {
+            $previousData = $this->fetchPreviousPeriodData($periodType, (int) $tenantId, $workspaceId, $now);
+        }
+
+        // Get data with previous period comparison
+        if ($previousData) {
+            $statistics = $this->getStatisticsWithPreviousData(
+                $this->getDefaultStatistics($periodType),
+                $previousData['statistics'] ?? [],
+                $periodType
+            );
+            $motivationalStats = $this->getMotivationalStatsWithPreviousData(
+                $this->getDefaultMotivationalStats(),
+                $previousData['motivational_stats'] ?? [],
+                $previousData['statistics'] ?? []
+            );
+            $pendingItems = $this->getPendingItemsWithPreviousData(
+                $this->getDefaultPendingItems($periodType),
+                $previousData['pending_items'] ?? [],
+                $periodType
+            );
+            $cashier = $this->getCashierWithPreviousData(
+                $this->getDefaultCashier($periodType),
+                $previousData['cashier'] ?? [],
+                $periodType
+            );
+            $billing = $this->getBillingWithPreviousData(
+                $this->getDefaultBilling($periodType),
+                $previousData['billing'] ?? [],
+                $periodType
+            );
+        } else {
+            $statistics = $this->getDefaultStatistics($periodType);
+            $motivationalStats = $this->getDefaultMotivationalStats();
+            $pendingItems = $this->getDefaultPendingItems($periodType);
+            $cashier = $this->getDefaultCashier($periodType);
+            $billing = $this->getDefaultBilling($periodType);
+        }
+
+        // Apply transformers for presentation data
+        return [
+            'motivational_stats' => $motivationalStats,
+            'statistics' => $this->statisticTransformer->transform($statistics, $periodType),
+            'pending_items' => $this->pendingItemTransformer->transform($pendingItems, $periodType),
+            'cashier' => $this->cashierTransformer->transform($cashier, $periodType),
+            'billing' => $this->billingTransformer->transform($billing, $periodType),
+            'queue_services' => [],
+            'diagnosis_treatment' => [],
+            'workspace_integrations' => $this->workspaceIntegrationTransformer->getDefaultForFrontend($periodType),
+            'trends' => $this->getDefaultTrends($periodType, $now),
+            'meta' => [
+                'period_type' => $periodType,
+                'message' => 'No data available for the specified period',
+                'timestamp' => $now->toIso8601String(),
+                'date' => $now->format('Y-m-d'),
+                'year' => $now->year,
+                'month' => $now->month,
+                'week' => (int) $now->format('W'),
+                'day' => $now->day,
+                'data_source' => 'elasticsearch',
+                'has_previous_data' => !empty($previousData),
+            ],
+        ];
     }
 }
