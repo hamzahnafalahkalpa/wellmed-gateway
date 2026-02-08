@@ -198,40 +198,40 @@ class AutolistController extends ApiController{
                     $satu_sehat = &$result['integration']['satu_sehat'];
 
                     //DUMMY DATA
-                    $satu_sehat['logs'] = [
-                        [
-                            'label' => 'Pasien',
-                            'flag' => 'patient',
-                            "from" => 0,
-                            "to" => 1,
-                            "progress" => 0,
-                            "last_updated_at" => now()
-                        ],
-                        [
-                            'label' => 'Kunjungan',
-                            'flag' => 'encounter',
-                            "from" => 1,
-                            "to" => 1,
-                            "progress" => 100,
-                            "last_updated_at" => now()
-                        ],
-                        [
-                            'label' => 'Kunjungan',
-                            'flag' => 'encounter',
-                            "from" => 0,
-                            "to" => 1,
-                            "progress" => 0,
-                            "last_updated_at" => now()
-                        ],
-                        [
-                            'label' => 'Observasi',
-                            'flag' => 'observation',
-                            "from" => 0,
-                            "to" => 1,
-                            "progress" => 0,
-                            "last_updated_at" => now()
-                        ]
-                    ];
+                    // $satu_sehat['logs'] = [
+                    //     [
+                    //         'label' => 'Pasien',
+                    //         'flag' => 'patient',
+                    //         "from" => 0,
+                    //         "to" => 1,
+                    //         "progress" => 0,
+                    //         "last_updated_at" => now()
+                    //     ],
+                    //     [
+                    //         'label' => 'Kunjungan',
+                    //         'flag' => 'encounter',
+                    //         "from" => 1,
+                    //         "to" => 1,
+                    //         "progress" => 100,
+                    //         "last_updated_at" => now()
+                    //     ],
+                    //     [
+                    //         'label' => 'Kunjungan',
+                    //         'flag' => 'encounter',
+                    //         "from" => 0,
+                    //         "to" => 1,
+                    //         "progress" => 0,
+                    //         "last_updated_at" => now()
+                    //     ],
+                    //     [
+                    //         'label' => 'Observasi',
+                    //         'flag' => 'observation',
+                    //         "from" => 0,
+                    //         "to" => 1,
+                    //         "progress" => 0,
+                    //         "last_updated_at" => now()
+                    //     ]
+                    // ];
                     return $result;
                 }
             break;
@@ -244,32 +244,32 @@ class AutolistController extends ApiController{
                     $satu_sehat = &$result['integration']['satu_sehat'];
 
                     //DUMMY DATA
-                    $satu_sehat['logs'] = [
-                        [
-                            'label' => 'Kunjungan',
-                            'flag' => 'encounter',
-                            "from" => 1,
-                            "to" => 1,
-                            "progress" => 100,
-                            "last_updated_at" => now()
-                        ],
-                        [
-                            'label' => 'Kunjungan',
-                            'flag' => 'encounter',
-                            "from" => 0,
-                            "to" => 1,
-                            "progress" => 0,
-                            "last_updated_at" => now()
-                        ],
-                        [
-                            'label' => 'Observasi',
-                            'flag' => 'observation',
-                            "from" => 0,
-                            "to" => 1,
-                            "progress" => 0,
-                            "last_updated_at" => now()
-                        ]
-                    ];
+                    // $satu_sehat['logs'] = [
+                    //     [
+                    //         'label' => 'Kunjungan',
+                    //         'flag' => 'encounter',
+                    //         "from" => 1,
+                    //         "to" => 1,
+                    //         "progress" => 100,
+                    //         "last_updated_at" => now()
+                    //     ],
+                    //     [
+                    //         'label' => 'Kunjungan',
+                    //         'flag' => 'encounter',
+                    //         "from" => 0,
+                    //         "to" => 1,
+                    //         "progress" => 0,
+                    //         "last_updated_at" => now()
+                    //     ],
+                    //     [
+                    //         'label' => 'Observasi',
+                    //         'flag' => 'observation',
+                    //         "from" => 0,
+                    //         "to" => 1,
+                    //         "progress" => 0,
+                    //         "last_updated_at" => now()
+                    //     ]
+                    // ];
                 }
                 if (isset(request()->credential)){
                     $credential = request()->credential;
