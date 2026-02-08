@@ -2,9 +2,12 @@
 
 namespace Projects\WellmedGateway\Schemas;
 
+use Hanafalah\LaravelSupport\Concerns\Support\HasElasticsearchLog;
 use Projects\WellmedGateway\Contracts\Schemas\ElasticBulk as SchemasElasticBulk;
 
 class ElasticBulk extends Elastic implements SchemasElasticBulk {
+    use HasElasticsearchLog;
+
     public function run($client,?array $attributes = null){
         $bulks = [];
         foreach ($attributes['datas'] as $datas) {
@@ -33,5 +36,10 @@ class ElasticBulk extends Elastic implements SchemasElasticBulk {
         }
         $this->bulks($bulks);
         $response = $client->bulk($this->__bulks);
+
+        // Log ES operations to database
+        if (config('elasticsearch.logging.enabled', true)) {
+            $this->logElasticsearchOperations($this->__bulks['body'], $response->asArray());
+        }
     }
 }

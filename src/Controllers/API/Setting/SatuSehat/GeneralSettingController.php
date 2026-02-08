@@ -150,8 +150,16 @@ class GeneralSettingController extends ApiController{
                     $people = $employee->people;
                     $card_identity['ihs_number'] = $practitioner['ihs_number'];
                     $employee->setAttribute('prop_card_identity',$card_identity);
+                    if (isset($practitioner['nik'])){
+                        $people_card_identity = $people->prop_card_identity;
+                        $people_card_identity['nik'] = $practitioner['nik'];
+                        $people->setAttribute('prop_card_identity',$people_card_identity);
+                        $people->save();
+                        $people->load($people->showUsingRelation());
+                        $employee->setAttribute('prop_people',$people->toViewApi()->resolve());
+                    }
                     $employee->save();
-                    if (!isset($card_identity['ihs_number']) && isset($people->prop_card_identity['nik'])){
+                    if (!isset($card_identity['ihs_number']) && isset($practitioner['nik'])){
                         try {
                             $this->__employee->prepareStoreSatuSehatEmployee($employee,'sync');
                         } catch (\Throwable $th) {

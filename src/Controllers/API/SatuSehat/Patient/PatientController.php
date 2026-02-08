@@ -15,9 +15,9 @@ class PatientController extends ApiController{
     }
 
     public function store(Request $request){
-        request()->replace([
-            'form' => request()->all()
-        ]);
+        // request()->replace([
+        //     'form' => request()->all()
+        // ]);
         return $this->__patient_schema->storePatientSatuSehat();
     }
 
