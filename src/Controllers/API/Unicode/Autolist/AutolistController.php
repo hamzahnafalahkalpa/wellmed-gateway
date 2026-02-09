@@ -232,7 +232,7 @@ class AutolistController extends ApiController{
                     //         "last_updated_at" => now()
                     //     ]
                     // ];
-                    return $result;
+                    return $satu_sehat;
                 }
             break;
             case 'Patient':
@@ -270,6 +270,7 @@ class AutolistController extends ApiController{
                     //         "last_updated_at" => now()
                     //     ]
                     // ];
+                    return $satu_sehat;
                 }
                 if (isset(request()->credential)){
                     $credential = request()->credential;
