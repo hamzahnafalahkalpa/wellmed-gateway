@@ -15,11 +15,22 @@ class ProfileController extends ApiController{
         parent::__construct();
     }
 
+    public function commontRequest(){
+        if (isset(request()->uuid)){
+            $user_reference_model = $this->UserReferenceModel()->uuid(request()->uuid)->first();
+            request()->replace([
+                'id' => $user_reference_model->reference_id
+            ]);
+        }
+    }
+
     public function store(StoreRequest $request){
+        $this->commontRequest();
         return $this->__employee_schema->storeProfile();
     }
     
     public function show(ShowRequest $request){
+        $this->commontRequest();
         return $this->__employee_schema->showProfile();
     }
 }

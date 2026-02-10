@@ -24,8 +24,6 @@ class ShowRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'id'   => ['nullable','required_without:uuid',$this->idValidation($this->__entity)],
-            'uuid' => ['nullable','required_without:id', 'string', $this->existsValidation($this->__entity,'uuid')],
         ];
     }
 }
