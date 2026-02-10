@@ -2,24 +2,50 @@
 
 namespace Projects\WellmedGateway\Controllers\API\Setting\SatuSehat;
 
-use Hanafalah\SatuSehat\Contracts\Schemas\SatuSehatLog;
-use Projects\WellmedBackbone\Services\SatuSehatDashboardService;
-use Projects\WellmedGateway\Controllers\API\ApiController;
 use Projects\WellmedGateway\Requests\API\Setting\SatuSehat\SatuSehatLog\{
-    DeleteRequest
+    DeleteRequest, ViewRequest, StoreRequest
 };
 use Illuminate\Http\Request;
 
-class SatuSehatLogController extends ApiController{
-    public function __construct(
-        protected SatuSehatLog $__schema,
-        protected SatuSehatDashboardService $dashboardService
-    ){
-        parent::__construct();
+class SatuSehatLogController extends EnvironmentController{
+    protected function commonConditional($query){
+        $query->where('method','POST');
+    }
+
+    public function index(ViewRequest $request){
+        return $this->getSatuSehatLogPaginate();
+    }
+
+    public function store(StoreRequest $request){
+        $raw_payload = request()->api_resource['raw_payload'];
+        $reference_id = request()->reference_id;
+        $name = request()->name;
+        $existing = [
+            'id' => request()->id,
+            'referenceType' => request()->reference_type,
+            'referenceId' => request()->reference_id
+        ];
+        switch ($name) {
+            case 'PatientSatuSehat':
+                $patient_model = $this->PatientModel()->findOrFail($reference_id);
+                app(config('app.contracts.Patient'))->prepareStorePatientSatuSehatLog($patient_model,$raw_payload,$existing);
+            break;
+            case 'EncounterSatuSehat':
+                $visit_registration_model = $this->VisitRegistrationModel()->with('visitPatient.patient')->findOrFail($reference_id);
+                $visit_patient_model = $visit_registration_model->visitPatient;
+                $patient_model = $visit_patient_model->patient;
+                app(config('app.contracts.VisitRegistration'))->prepareStoreEncounterSatuSehatLog($visit_registration_model,$visit_patient_model,$patient_model,$raw_payload,$existing);
+            break;
+        }
+        return [
+            'message' => 'Sync running in background',
+            'raw_payload' => $raw_payload
+        ];
+        // return $this->storeSatuSehatLog();
     }
 
     public function destroy(DeleteRequest $request){
-        return $this->__schema->deleteSatuSehatLog();
+        return $this->deleteSatuSehatLog();
     }
 
     /**

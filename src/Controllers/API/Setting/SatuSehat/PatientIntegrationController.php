@@ -15,6 +15,10 @@ class PatientIntegrationController extends ApiController{
         parent::__construct();
     }
 
+    public function commonRequest(){
+        
+    }
+
     public function index(ViewRequest $request){
         return $this->__schema->viewPatientIntegrationPaginate();
     }
