@@ -19,7 +19,7 @@ class VisitExaminationController extends EnvironmentController
         $medic_service_id        = $visit_examination['medic_service_id'] ?? $this->MedicServiceModel()->where('label','UMUM')->firstOrFail()->getKey();
         $visit_registration = [
             'id' => null,
-            'status' => 'PROCESSING',
+            'status' => 'DRAFT',
             // "practitioner_evaluation" => [ //nullable, FOR HEAD DOCTOR
                 // "practitioner_type" => "Employee", //nullable, default from config
                 // "practitioner_id"=> $this->global_employee->getKey(), //GET FROM AUTOLIST - EMPLOYEE LIST (DOCTOR)
