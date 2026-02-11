@@ -17,9 +17,21 @@ class VisitExaminationController extends EnvironmentController
         $visit_examination['patient_model'] = $patient_model;
         $patient_type_service_id = $visit_examination['patient_type_service_id'] ?? $this->PatientTypeServiceModel()->where('label','UMUM')->firstOrFail()->getKey();
         $medic_service_id        = $visit_examination['medic_service_id'] ?? $this->MedicServiceModel()->where('label','UMUM')->firstOrFail()->getKey();
+        // Get next queue number from Elasticsearch
+        $queue_number = null;
+        if (config('elasticsearch.enabled', false)) {
+            try {
+                $queue_number = app(\Projects\WellmedBackbone\Services\VisitRegistrationQueueService::class)
+                    ->getNextQueueNumber();
+            } catch (\Throwable $e) {
+                \Log::warning('Failed to get queue number from ES', ['error' => $e->getMessage()]);
+            }
+        }
+
         $visit_registration = [
             'id' => null,
             'status' => 'DRAFT',
+            'queue_number' => $queue_number,
             // "practitioner_evaluation" => [ //nullable, FOR HEAD DOCTOR
                 // "practitioner_type" => "Employee", //nullable, default from config
                 // "practitioner_id"=> $this->global_employee->getKey(), //GET FROM AUTOLIST - EMPLOYEE LIST (DOCTOR)
