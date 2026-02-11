@@ -37,7 +37,7 @@ class DocumentTypeExportController extends EnvironmentController{
                     }
                 }
                 $assessment['exam']['forms'] = $forms;
-                $visit_examination = $this->VisitExaminationModel()->with('patient.reference.addresses','visitRegistration')->findOrFail($assessment['examination_id']);
+                $visit_examination = $this->VisitExaminationModel()->with('patient.reference.addresses','visitRegistration.practitionerEvaluation')->findOrFail($assessment['examination_id']);
                 $patient = $visit_examination->patient;
                 $patient = json_decode(json_encode($patient->toShowApi()->resolve()));
                 $assessment = json_decode(json_encode($assessment));
