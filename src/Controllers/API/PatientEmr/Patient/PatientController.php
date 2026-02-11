@@ -10,10 +10,74 @@ use Illuminate\Http\Request;
 use Aws\S3\S3Client;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str as StrHelper;
 
 class PatientController extends EnvironmentController{
 
     public function index(ViewRequest $request){
+        // Enable profiling if PATIENT_PROFILE env is set
+        $profiling = \env('PATIENT_PROFILE', false);
+        if ($profiling) {
+            $timings = [];
+            $requestStart = microtime(true);
+
+            // Enable query logging
+            DB::enableQueryLog();
+
+            // Profile userAttempt (authentication/tenant resolution)
+            $t = microtime(true);
+            $this->userAttempt();
+            $timings['user_attempt'] = round((microtime(true) - $t) * 1000, 2);
+
+            // Profile schema query
+            $t = microtime(true);
+            $result = $this->__patient_schema->viewPatientPaginate();
+            $timings['view_paginate'] = round((microtime(true) - $t) * 1000, 2);
+
+            // Get query log
+            $queries = DB::getQueryLog();
+            $timings['query_count'] = count($queries);
+            $timings['query_total_ms'] = round(array_sum(array_column($queries, 'time')), 2);
+
+            // Find slowest queries
+            usort($queries, fn($a, $b) => $b['time'] <=> $a['time']);
+            $slowestQueries = array_slice($queries, 0, 5);
+
+            $timings['total'] = round((microtime(true) - $requestStart) * 1000, 2);
+
+            // Log profiling results in readable format
+            $output = "\n";
+            $output .= "╔══════════════════════════════════════════════════════════════╗\n";
+            $output .= "║              PATIENT ENDPOINT PROFILING                      ║\n";
+            $output .= "╠══════════════════════════════════════════════════════════════╣\n";
+            $output .= sprintf("║ %-30s %25s ms ║\n", "User Attempt (Auth/Tenant):", $timings['user_attempt']);
+            $output .= sprintf("║ %-30s %25s ms ║\n", "View Paginate (Query+Transform):", $timings['view_paginate']);
+            $output .= sprintf("║ %-30s %28s ║\n", "Database Query Count:", $timings['query_count']);
+            $output .= sprintf("║ %-30s %25s ms ║\n", "Database Query Total:", $timings['query_total_ms']);
+            $output .= "╠══════════════════════════════════════════════════════════════╣\n";
+            $output .= sprintf("║ %-30s %25s ms ║\n", "TOTAL REQUEST TIME:", $timings['total']);
+            $output .= "╠══════════════════════════════════════════════════════════════╣\n";
+            $output .= "║ TOP 5 SLOWEST QUERIES:                                       ║\n";
+            $output .= "╠══════════════════════════════════════════════════════════════╣\n";
+
+            foreach ($slowestQueries as $i => $q) {
+                $num = $i + 1;
+                $time = round($q['time'], 2);
+                $sql = StrHelper::limit($q['query'], 100);
+                $output .= sprintf("║ %d. [%6.2f ms] %s\n", $num, $time, $sql);
+            }
+
+            $output .= "╚══════════════════════════════════════════════════════════════╝\n";
+
+            Log::info('[PatientProfile]' . $output);
+
+            DB::disableQueryLog();
+
+            return $result;
+        }
+
         $this->userAttempt();
         return $this->__patient_schema->viewPatientPaginate();
     }
