@@ -180,7 +180,7 @@ class AutolistController extends ApiController{
                         request()->merge([]);
                         $query->where(function ($query) use ($morph, $searches) {
                             foreach ($searches as $search){
-                                $query->orWhere(function ($query) use ($morph, $search) {
+                                $query->where(function ($query) use ($morph, $search) {
                                     $query->whereRaw('LOWER(provinces.name) LIKE ?', ["%{$search}%"])
                                         ->orWhereRaw('LOWER(districts.name) LIKE ?', ["%{$search}%"])
                                         ->orWhereRaw('LOWER(subdistricts.name) LIKE ?', ["%{$search}%"]);
