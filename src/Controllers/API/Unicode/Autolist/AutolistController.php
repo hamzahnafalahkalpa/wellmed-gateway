@@ -176,14 +176,19 @@ class AutolistController extends ApiController{
                     }
                     if (isset(request()->search_name)) {
                         $search = strtolower(request()->search_name);
-
-                        $query->where(function ($query) use ($morph, $search) {
-                            $query->whereRaw('LOWER(provinces.name) LIKE ?', ["%{$search}%"])
-                                ->orWhereRaw('LOWER(districts.name) LIKE ?', ["%{$search}%"])
-                                ->orWhereRaw('LOWER(subdistricts.name) LIKE ?', ["%{$search}%"]);
-
-                            if ($morph === 'Village') {
-                                $query->orWhereRaw('LOWER(villages.name) LIKE ?', ["%{$search}%"]);
+                        $searches = explode(' ',$search);
+                        request()->merge([]);
+                        $query->where(function ($query) use ($morph, $searches) {
+                            foreach ($searches as $search){
+                                $query->orWhere(function ($query) use ($morph, $search) {
+                                    $query->whereRaw('LOWER(provinces.name) LIKE ?', ["%{$search}%"])
+                                        ->orWhereRaw('LOWER(districts.name) LIKE ?', ["%{$search}%"])
+                                        ->orWhereRaw('LOWER(subdistricts.name) LIKE ?', ["%{$search}%"]);
+    
+                                    if ($morph === 'Village') {
+                                        $query->orWhereRaw('LOWER(villages.name) LIKE ?', ["%{$search}%"]);
+                                    }
+                                });
                             }
                         });
                     }
