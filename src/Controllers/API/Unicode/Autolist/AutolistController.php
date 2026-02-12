@@ -345,6 +345,13 @@ class AutolistController extends ApiController{
                 }
                 return $this->callAutolist($morph);
             break;
+            case 'Service':
+                return $this->callAutolist($morph,function($query){
+                    if (isset(request()->search_reference_type) && request()->search_reference_type == 'MedicService'){
+                        $query->whereHasMorph('reference','MedicService');
+                    }
+                });
+            break;
             case 'Assessment':
                 $patient_id = request()->search_patient_id;
                 request()->merge([
