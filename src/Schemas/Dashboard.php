@@ -264,12 +264,43 @@ class Dashboard implements DashboardContract
                 $previousData['billing'] ?? [],
                 $periodType
             );
+            $queueServices = $this->getQueueServicesWithPreviousData(
+                [],
+                $previousData['queue_services'] ?? [],
+                $periodType
+            );
+            $diagnosisTreatment = $this->getDiagnosisTreatmentWithPreviousData(
+                [],
+                $previousData['diagnosis_treatment'] ?? [],
+                $periodType
+            );
+            $workspaceIntegrations = $this->getWorkspaceIntegrationsWithPreviousData(
+                $this->getDefaultWorkspaceIntegrations($periodType),
+                $previousData['workspace_integrations'] ?? [],
+                $periodType
+            );
+            $trends = $this->getTrendsWithPreviousData(
+                $this->getDefaultTrends($periodType, $now),
+                $previousData['trends'] ?? [],
+                $periodType,
+                $now
+            );
         } else {
             $statistics = $this->getDefaultStatistics($periodType);
             $motivationalStats = $this->getDefaultMotivationalStats();
             $pendingItems = $this->getDefaultPendingItems($periodType);
             $cashier = $this->getDefaultCashier($periodType);
             $billing = $this->getDefaultBilling($periodType);
+            $queueServices = [
+                'current' => [],
+                'previous' => [],
+            ];
+            $diagnosisTreatment = [
+                'current' => [],
+                'previous' => [],
+            ];
+            $workspaceIntegrations = $this->getDefaultWorkspaceIntegrations($periodType);
+            $trends = $this->getDefaultTrends($periodType, $now);
         }
 
         // Apply transformers for presentation data
@@ -279,10 +310,10 @@ class Dashboard implements DashboardContract
             'pending_items' => $this->pendingItemTransformer->transform($pendingItems, $periodType),
             'cashier' => $this->cashierTransformer->transform($cashier, $periodType),
             'billing' => $this->billingTransformer->transform($billing, $periodType),
-            'queue_services' => [],
-            'diagnosis_treatment' => [],
-            'workspace_integrations' => $this->workspaceIntegrationTransformer->getDefaultForFrontend($periodType),
-            'trends' => $this->getDefaultTrends($periodType, $now),
+            'queue_services' => $queueServices,
+            'diagnosis_treatment' => $diagnosisTreatment,
+            'workspace_integrations' => $this->workspaceIntegrationTransformer->transform($workspaceIntegrations, $periodType),
+            'trends' => $trends,
             'meta' => [
                 'period_type' => $periodType,
                 'message' => 'No data available for the specified period',
