@@ -247,34 +247,6 @@ class AutolistController extends ApiController{
                     ]);
                     $result = $this->callAutolist($morph);
                     $satu_sehat = &$result['integration']['satu_sehat'];
-
-                    //DUMMY DATA
-                    // $satu_sehat['logs'] = [
-                    //     [
-                    //         'label' => 'Kunjungan',
-                    //         'flag' => 'encounter',
-                    //         "from" => 1,
-                    //         "to" => 1,
-                    //         "progress" => 100,
-                    //         "last_updated_at" => now()
-                    //     ],
-                    //     [
-                    //         'label' => 'Kunjungan',
-                    //         'flag' => 'encounter',
-                    //         "from" => 0,
-                    //         "to" => 1,
-                    //         "progress" => 0,
-                    //         "last_updated_at" => now()
-                    //     ],
-                    //     [
-                    //         'label' => 'Observasi',
-                    //         'flag' => 'observation',
-                    //         "from" => 0,
-                    //         "to" => 1,
-                    //         "progress" => 0,
-                    //         "last_updated_at" => now()
-                    //     ]
-                    // ];
                     return $satu_sehat;
                 }
                 if (isset(request()->credential)){
