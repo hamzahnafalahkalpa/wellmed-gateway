@@ -2,7 +2,7 @@
 
 namespace Projects\WellmedGateway\Controllers\API\PatientEmr\Patient\Deposit;
 
-use Projects\WellmedGateway\Controllers\API\Transaction\Deposit\EnvironmentController;
+use Projects\WellmedGateway\Controllers\API\PatientEmr\Patient\EnvironmentController;
 use Projects\WellmedGateway\Requests\API\PatientEmr\Patient\Deposit\{
     ViewRequest, ShowRequest, StoreRequest, DeleteRequest
 };

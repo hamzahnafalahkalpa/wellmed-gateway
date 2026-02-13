@@ -13,6 +13,7 @@ class VisitExaminationController extends EnvironmentController
     public function store(StoreRequest $request){
         $this->commonRequest();
         $visit_examination = request()->all();
+        unset($visit_examination['visit_registration']);
         $patient_model = $this->PatientModel()->findOrFail(request()->patient_id);
         $visit_examination['patient_model'] = $patient_model;
         $patient_type_service_id = $visit_examination['patient_type_service_id'] ?? $this->PatientTypeServiceModel()->where('label','UMUM')->firstOrFail()->getKey();
@@ -32,11 +33,6 @@ class VisitExaminationController extends EnvironmentController
             'id' => null,
             'status' => 'DRAFT',
             'queue_number' => $queue_number,
-            // "practitioner_evaluation" => [ //nullable, FOR HEAD DOCTOR
-                // "practitioner_type" => "Employee", //nullable, default from config
-                // "practitioner_id"=> $this->global_employee->getKey(), //GET FROM AUTOLIST - EMPLOYEE LIST (DOCTOR)
-                // "as_pic"=> true //nullable, default false, in:true/false
-            // ],
             "medic_service_id"  => $medic_service_id,
             'visit_examination' => $visit_examination
         ];

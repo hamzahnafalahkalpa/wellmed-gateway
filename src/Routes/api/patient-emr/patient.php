@@ -1,7 +1,10 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Projects\WellmedGateway\Controllers\API\PatientEmr\Patient\PatientController;
+use Projects\WellmedGateway\Controllers\API\PatientEmr\Patient\{
+    OldVisit\OldVisitController,
+    PatientController
+};
 use Projects\WellmedGateway\Controllers\API\PatientEmr\Patient\VisitPatient\{
     VisitRegistration\VisitExamination\Assessment\AssessmentController,
     VisitRegistration\Referral\ReferralController,
@@ -47,6 +50,7 @@ Route::group([
     "prefix" => "/patient/{patient_id}",
     "as"     => "patient.show.",
 ],function() {
+    Route::apiResource('/old-visit',OldVisitController::class)->only('index','show')->parameters(['old-visit' => 'id']);
     Route::apiResource('/visit-patient',VisitPatientController::class)->parameters(['visit-patient' => 'id']);
     Route::group([
         "prefix" => "/visit-patient/{visit_patient_id}",

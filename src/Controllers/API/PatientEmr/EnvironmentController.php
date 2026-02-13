@@ -6,6 +6,7 @@ use Hanafalah\ModuleAppointment\Contracts\Schemas\Reservation;
 use Hanafalah\ModuleExamination\Contracts\Schemas\Examination;
 use Hanafalah\ModuleExamination\Contracts\Schemas\Examination\Assessment\Assessment;
 use Hanafalah\ModulePatient\Contracts\Schemas\{
+    OldVisit,
     Referral
 };
 use Projects\WellmedBackbone\Contracts\Schemas\ModulePatient\Patient;
@@ -23,6 +24,7 @@ use Projects\WellmedBackbone\Schemas\ModulePatient\VisitRegistration;
 class EnvironmentController extends ApiBaseController{
 
     public function __construct(
+        protected OldVisit $__old_visit_schema,
         protected Patient $__patient_schema,
         protected VisitExamination $__visit_examination_schema,
         protected VisitPatient $__visit_patient_schema,

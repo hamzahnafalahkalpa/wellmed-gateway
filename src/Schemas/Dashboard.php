@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Log;
 use Projects\WellmedBackbone\Services\Concerns\HasDashboardMetricsDefaults;
 use Projects\WellmedBackbone\Transformers\Dashboard\BillingTransformer;
 use Projects\WellmedBackbone\Transformers\Dashboard\CashierTransformer;
+use Projects\WellmedBackbone\Transformers\Dashboard\MotivationalStatusTransformer;
 use Projects\WellmedBackbone\Transformers\Dashboard\PendingItemTransformer;
 use Projects\WellmedBackbone\Transformers\Dashboard\StatisticTransformer;
 use Projects\WellmedBackbone\Transformers\Dashboard\WorkspaceIntegrationTransformer;
@@ -25,6 +26,7 @@ class Dashboard implements DashboardContract
     protected $client;
     protected string $indexPrefix = 'dashboard-metrics';
 
+    protected MotivationalStatusTransformer $motivationalStatusTransformer;
     protected StatisticTransformer $statisticTransformer;
     protected PendingItemTransformer $pendingItemTransformer;
     protected CashierTransformer $cashierTransformer;
@@ -43,6 +45,7 @@ class Dashboard implements DashboardContract
         }
 
         // Initialize transformers
+        $this->motivationalStatusTransformer = new MotivationalStatusTransformer();
         $this->statisticTransformer = new StatisticTransformer();
         $this->pendingItemTransformer = new PendingItemTransformer();
         $this->cashierTransformer = new CashierTransformer();
@@ -78,6 +81,7 @@ class Dashboard implements DashboardContract
             ]);
 
             $responseArray = $response->asArray();
+
             // If no data found, create default document
             if (empty($responseArray['hits']['hits'])) {
                 $timestamp = $this->getTimestampFromParams($params);
@@ -198,10 +202,9 @@ class Dashboard implements DashboardContract
             $this->getDefaultMotivationalStats(),
             $hit['motivational_stats'] ?? []
         );
-
         // Apply transformers for presentation data
         return [
-            'motivational_stats' => $motivationalStats,
+            'motivational_stats' => $this->motivationalStatusTransformer->transform($motivationalStats),
             'statistics' => $this->statisticTransformer->transform($statistics, $periodType),
             'pending_items' => $this->pendingItemTransformer->transform($pendingItems, $periodType),
             'cashier' => $this->cashierTransformer->transform($cashier, $periodType),
