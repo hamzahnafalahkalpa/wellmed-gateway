@@ -78,7 +78,6 @@ class Dashboard implements DashboardContract
             ]);
 
             $responseArray = $response->asArray();
-
             // If no data found, create default document
             if (empty($responseArray['hits']['hits'])) {
                 $timestamp = $this->getTimestampFromParams($params);
@@ -87,7 +86,6 @@ class Dashboard implements DashboardContract
                 // Return the default response
                 return $this->getDefaultDashboardResponse($periodType, $timestamp, $params);
             }
-
             return $this->formatDashboardResponse($responseArray, $params);
 
         } catch (\Exception $e) {
@@ -123,7 +121,7 @@ class Dashboard implements DashboardContract
         }
 
         if (!empty($params['search_workspace_id'])) {
-            $must[] = ['term' => ['workspace_id' => (int) $params['search_workspace_id']]];
+            $must[] = ['term' => ['workspace_id' => $params['search_workspace_id']]];
         }
 
         // Date filtering based on search_type
@@ -195,15 +193,27 @@ class Dashboard implements DashboardContract
         $billing = $hit['billing'] ?? $this->getDefaultBilling($periodType);
         $workspaceIntegrations = $hit['workspace_integrations'] ?? $this->getDefaultWorkspaceIntegrations($periodType);
 
+        // Merge motivational_stats with defaults to ensure all fields exist (including 'current')
+        $motivationalStats = array_merge(
+            $this->getDefaultMotivationalStats(),
+            $hit['motivational_stats'] ?? []
+        );
+
         // Apply transformers for presentation data
         return [
-            'motivational_stats' => $hit['motivational_stats'] ?? $this->getDefaultMotivationalStats(),
+            'motivational_stats' => $motivationalStats,
             'statistics' => $this->statisticTransformer->transform($statistics, $periodType),
             'pending_items' => $this->pendingItemTransformer->transform($pendingItems, $periodType),
             'cashier' => $this->cashierTransformer->transform($cashier, $periodType),
             'billing' => $this->billingTransformer->transform($billing, $periodType),
-            'queue_services' => $hit['queue_services'] ?? [],
-            'diagnosis_treatment' => $hit['diagnosis_treatment'] ?? [],
+            'queue_services' => [
+                'current' => $hit['queue_services'] ?? [],
+                'previous' => [],
+            ],
+            'diagnosis_treatment' => [
+                'current' => $hit['diagnosis_treatment'] ?? [],
+                'previous' => [],
+            ],
             'workspace_integrations' => $this->workspaceIntegrationTransformer->transform($workspaceIntegrations, $periodType),
             'trends' => $hit['trends'] ?? $this->getDefaultTrends($periodType, $now),
             'meta' => [
@@ -316,7 +326,6 @@ class Dashboard implements DashboardContract
             'trends' => $trends,
             'meta' => [
                 'period_type' => $periodType,
-                'message' => 'No data available for the specified period',
                 'timestamp' => $now->toIso8601String(),
                 'date' => $now->format('Y-m-d'),
                 'year' => $now->year,
@@ -324,7 +333,7 @@ class Dashboard implements DashboardContract
                 'week' => (int) $now->format('W'),
                 'day' => $now->day,
                 'data_source' => 'elasticsearch',
-                'has_previous_data' => !empty($previousData),
+                'aggregation_period' => null,
             ],
         ];
     }
