@@ -6,27 +6,27 @@ use Hanafalah\LaravelSupport\Concerns\Support\HasCache;
 use Illuminate\Http\Request;
 use Projects\WellmedGateway\Controllers\API\ApiController;
 use Illuminate\Support\Str;
-use Projects\WellmedGateway\Schemas\Reporting;
 
+/**
+ * ReportingController - Uses database models with ElasticSearch filtering
+ *
+ * This controller uses the withElasticSearch() scope on models to filter data.
+ * The scope uses ES for fast ID lookups, then hydrates from database.
+ */
 class ReportingController extends ApiController
 {
     use HasCache;
-
-    protected ?Reporting $reporting = null;
-
-    public function __construct()
-    {
-        $this->reporting = app(Reporting::class);
-    }
 
     /**
      * Main report endpoint - routes to specific report type
      */
     public function index(Request $request)
     {
+        $this->userAttempt();
+
         $reportType = Str::upper(Str::replace('-', '_', request()->reporting_type));
         $page = request()->page ?? 1;
-        $perPage = request()->per_page ?? 10;
+        $perPage = request()->per_page ?? request()->limit ?? 10;
 
         return match ($reportType) {
             'PATIENT_DATA_RECAP_REPORT' => $this->patientRecap($page, $perPage),
@@ -42,141 +42,220 @@ class ReportingController extends ApiController
 
     /**
      * Patient Data Recap Report
+     *
+     * Elastic fields: id, name, medical_record, old_mr, first_name, last_name, dob, pob,
+     * nik, nik_ibu, passport, reference_type, reference_id, patient_type_id,
+     * patient_occupation_id, patient_occupation_name, payer_name, created_at, updated_at
      */
     protected function patientRecap(int $page, int $perPage): array
     {
-        $filters = $this->extractFilters(['medical_record', 'name', 'people.card_identity.nik', 'people.pob', 'people.dob']);
-
-        $result = $this->reporting->search(Reporting::INDEX_PATIENT, [
-            'page' => $page,
-            'per_page' => $perPage,
-            'filters' => $filters,
+        $this->mergeSearchParams([
+            'medical_record' => request()->input('medical_record'),
+            'name' => request()->input('name'),
+            'nik' => request()->input('nik'),
+            'pob' => request()->input('pob'),
+            'dob' => request()->input('dob'),
         ]);
 
-        return array_merge($result, [
-            'attributes' => [],
+        $model = $this->PatientModel();
+        $query = $model->with($model->viewUsingRelation())
+            ->withElasticSearch('or');
+
+        $paginator = $query->paginate($perPage, ['*'], 'page', $page);
+
+        // Get columns from MasterReport database
+        $columns = $this->getReportColumns('PATIENT_DATA_RECAP_REPORT');
+
+        return $this->formatPaginatedResponse($paginator, [
             'filters' => $this->getPatientFilters(),
-            'columns' => $this->getPatientColumns(),
+            'columns' => $columns,
         ]);
     }
 
     /**
      * Visit Patient Recap Report
+     *
+     * Elastic fields: id, visit_code, queue_number, flag, status, patient_id, name,
+     * medical_record, nik, dob, reference_type, reference_id, reservation_id,
+     * patient_type_service_id, consument_name, consument_phone, payer_name,
+     * medic_service_label, warehouse_name, visited_at, reported_at, created_at, updated_at
      */
     protected function visitPatientRecap(int $page, int $perPage): array
     {
-        $filters = $this->extractFilters(['patient.name', 'visit_code', 'medic_service.name']);
-
-        $result = $this->reporting->search(Reporting::INDEX_VISIT_PATIENT, [
-            'page' => $page,
-            'per_page' => $perPage,
-            'filters' => $filters,
+        $this->mergeSearchParams([
+            'name' => request()->input('patient_name'),
+            'medical_record' => request()->input('medical_record'),
+            'visit_code' => request()->input('visit_code'),
+            'medic_service_label' => request()->input('medic_service_label'),
+            'status' => request()->input('status'),
         ]);
 
-        return array_merge($result, [
-            'attributes' => [],
+        $model = $this->VisitPatientModel();
+        $query = $model->with($model->viewUsingRelation())
+            ->withElasticSearch('or');
+
+        $paginator = $query->paginate($perPage, ['*'], 'page', $page);
+
+        // Get columns from MasterReport database
+        $columns = $this->getReportColumns('VISIT_PATIENT_REPORT');
+
+        return $this->formatPaginatedResponse($paginator, [
             'filters' => $this->getVisitPatientFilters(),
-            'columns' => $this->getVisitPatientColumns(),
+            'columns' => $columns,
         ]);
     }
 
     /**
      * Diagnosis Recap Report
+     *
+     * Elastic fields: id, name, patient_id, disease_type, disease_id, disease_name,
+     * classification_disease_id, reference_type, reference_id, examination_summary_id,
+     * patient_summary_id, created_at, updated_at
      */
     protected function diagnosisRecap(int $page, int $perPage): array
     {
-        $filters = $this->extractFilters(['disease_name', 'patient.name']);
-
-        $result = $this->reporting->search(Reporting::INDEX_PATIENT_ILLNESS, [
-            'page' => $page,
-            'per_page' => $perPage,
-            'filters' => $filters,
+        $this->mergeSearchParams([
+            'disease_name' => request()->input('disease_name'),
+            'name' => request()->input('patient_name'),
+            'patient_id' => request()->input('patient_id'),
         ]);
 
-        return array_merge($result, [
-            'attributes' => [],
+        $model = $this->PatientIllnessModel();
+        $query = $model->with($model->viewUsingRelation())
+            ->withElasticSearch('or');
+
+        $paginator = $query->paginate($perPage, ['*'], 'page', $page);
+
+        // Get columns from MasterReport database
+        $columns = $this->getReportColumns('DIAGNOSIS_RECAP_REPORT');
+
+        return $this->formatPaginatedResponse($paginator, [
             'filters' => $this->getDiagnosisFilters(),
-            'columns' => $this->getDiagnosisColumns(),
+            'columns' => $columns,
         ]);
     }
 
     /**
      * Billing Recap Report
+     *
+     * Elastic fields: id, uuid, billing_code, has_transaction_id, author_type, author_id,
+     * author_name, cashier_type, cashier_id, cashier_name, patient_name, patient_nik,
+     * consument_name, total_amount, total_paid, total_debt, status, reported_at, created_at, updated_at
      */
     protected function billingRecap(int $page, int $perPage): array
     {
-        $filters = $this->extractFilters(['billing_code', 'patient.name', 'status']);
-
-        $result = $this->reporting->search(Reporting::INDEX_BILLING, [
-            'page' => $page,
-            'per_page' => $perPage,
-            'filters' => $filters,
+        $this->mergeSearchParams([
+            'billing_code' => request()->input('billing_code'),
+            'patient_name' => request()->input('patient_name'),
+            'patient_nik' => request()->input('patient_nik'),
+            'consument_name' => request()->input('consument_name'),
+            'status' => request()->input('status'),
         ]);
 
-        return array_merge($result, [
-            'attributes' => [],
+        $model = $this->BillingModel();
+        $query = $model->with($model->viewUsingRelation())
+            ->withElasticSearch('or');
+
+        $paginator = $query->paginate($perPage, ['*'], 'page', $page);
+
+        // Get columns from MasterReport database
+        $columns = $this->getReportColumns('TRANSACTION_BILLING_REPORT');
+
+        return $this->formatPaginatedResponse($paginator, [
             'filters' => $this->getBillingFilters(),
-            'columns' => $this->getBillingColumns(),
+            'columns' => $columns,
         ]);
     }
 
     /**
      * Payment Recap Report
+     *
+     * Elastic fields: id, flag, invoice_code, billing_id, billing_code, author_id, author_type,
+     * author_name, payer_id, payer_type, payer_name, patient_name, patient_nik,
+     * total_amount, total_paid, total_debt, reported_at, paid_at, created_at, updated_at
      */
     protected function paymentRecap(int $page, int $perPage): array
     {
-        $filters = $this->extractFilters(['invoice_code', 'patient.name', 'payment_method']);
-
-        $result = $this->reporting->search(Reporting::INDEX_INVOICE, [
-            'page' => $page,
-            'per_page' => $perPage,
-            'filters' => $filters,
+        $this->mergeSearchParams([
+            'invoice_code' => request()->input('invoice_code'),
+            'billing_code' => request()->input('billing_code'),
+            'patient_name' => request()->input('patient_name'),
+            'patient_nik' => request()->input('patient_nik'),
+            'payer_name' => request()->input('payer_name'),
         ]);
 
-        return array_merge($result, [
-            'attributes' => [],
+        $model = $this->InvoiceModel();
+        $query = $model->with($model->viewUsingRelation())
+            ->withElasticSearch('or');
+
+        $paginator = $query->paginate($perPage, ['*'], 'page', $page);
+
+        // Get columns from MasterReport database
+        $columns = $this->getReportColumns('PAYMENT_RECAP_REPORT');
+
+        return $this->formatPaginatedResponse($paginator, [
             'filters' => $this->getPaymentFilters(),
-            'columns' => $this->getPaymentColumns(),
+            'columns' => $columns,
         ]);
     }
 
     /**
      * Medic Observation Recap Report
+     *
+     * Elastic fields: id, visit_examination_code, status, visit_patient_id, visit_registration_id,
+     * patient_id, patient_name, patient_medical_record, patient_nik, medic_service_label,
+     * warehouse_name, is_commit, is_addendum, sign_off_at, created_at, updated_at
      */
     protected function medicObservationRecap(int $page, int $perPage): array
     {
-        $filters = $this->extractFilters(['patient.name', 'observation_type']);
-
-        $result = $this->reporting->search(Reporting::INDEX_VISIT_EXAMINATION, [
-            'page' => $page,
-            'per_page' => $perPage,
-            'filters' => $filters,
+        $this->mergeSearchParams([
+            'patient_name' => request()->input('patient_name'),
+            'patient_medical_record' => request()->input('patient_medical_record'),
+            'visit_examination_code' => request()->input('visit_examination_code'),
         ]);
 
-        return array_merge($result, [
-            'attributes' => [],
+        $model = $this->VisitExaminationModel();
+        $query = $model->with($model->viewUsingRelation())
+            ->withElasticSearch('or');
+
+        $paginator = $query->paginate($perPage, ['*'], 'page', $page);
+
+        // Get columns from MasterReport database
+        $columns = $this->getReportColumns('MEDIC_OBSERVATION_RECAP_REPORT');
+
+        return $this->formatPaginatedResponse($paginator, [
             'filters' => $this->getMedicObservationFilters(),
-            'columns' => $this->getMedicObservationColumns(),
+            'columns' => $columns,
         ]);
     }
 
     /**
      * Refund/Discount Recap Report
+     *
+     * Elastic fields: id, code, name, invoice_id, invoice_code, patient_name, patient_nik,
+     * refund_amount, reason, created_at, updated_at
      */
     protected function refundDiscountRecap(int $page, int $perPage): array
     {
-        $filters = $this->extractFilters(['refund_code', 'patient.name', 'type']);
-
-        $result = $this->reporting->search(Reporting::INDEX_REFUND, [
-            'page' => $page,
-            'per_page' => $perPage,
-            'filters' => $filters,
+        $this->mergeSearchParams([
+            'code' => request()->input('refund_code'),
+            'patient_name' => request()->input('patient_name'),
+            'patient_nik' => request()->input('patient_nik'),
+            'invoice_code' => request()->input('invoice_code'),
         ]);
 
-        return array_merge($result, [
-            'attributes' => [],
+        $model = $this->RefundModel();
+        $query = $model->with($model->viewUsingRelation())
+            ->withElasticSearch('or');
+
+        $paginator = $query->paginate($perPage, ['*'], 'page', $page);
+
+        // Get columns from MasterReport database
+        $columns = $this->getReportColumns('REFUND_DISCOUNT_RECAP_REPORT');
+
+        return $this->formatPaginatedResponse($paginator, [
             'filters' => $this->getRefundFilters(),
-            'columns' => $this->getRefundColumns(),
+            'columns' => $columns,
         ]);
     }
 
@@ -198,170 +277,162 @@ class ReportingController extends ApiController
     }
 
     /**
-     * Extract filters from request based on allowed keys
+     * Merge search parameters into request with search_ prefix
      */
-    protected function extractFilters(array $allowedKeys): array
+    protected function mergeSearchParams(array $params): void
     {
-        $filters = [];
-        foreach ($allowedKeys as $key) {
-            $value = request()->input($key) ?? request()->input(str_replace('.', '_', $key));
-            if (!empty($value)) {
-                $filters[$key] = $value;
+        $searchParams = [];
+        foreach ($params as $key => $value) {
+            if (!empty($value) || $value === '0' || $value === 0) {
+                $searchParams["search_{$key}"] = $value;
             }
         }
-        return $filters;
+
+        if (!empty($searchParams)) {
+            request()->merge($searchParams);
+        }
+    }
+
+    /**
+     * Format paginated response with metadata
+     */
+    protected function formatPaginatedResponse($paginator, array $meta = []): array
+    {
+        // Transform each item using toViewApi if available
+        $data = $paginator->getCollection()->map(function ($item) {
+            if (method_exists($item, 'toViewApi')) {
+                return $item->toViewApi()->resolve();
+            }
+            return $item->toArray();
+        })->toArray();
+
+        return array_merge([
+            'data' => $data,
+            'from' => $paginator->firstItem() ?? 0,
+            'to' => $paginator->lastItem() ?? 0,
+            'total' => $paginator->total(),
+            'per_page' => $paginator->perPage(),
+            'current_page' => $paginator->currentPage(),
+            'last_page' => $paginator->lastPage(),
+            'attributes' => [],
+        ], $meta);
+    }
+
+    /**
+     * Get report columns from MasterReport database
+     */
+    protected function getReportColumns(string $reportLabel): array
+    {
+        $masterReport = $this->MasterReportModel()
+            ->where('label', $reportLabel)
+            ->first();
+
+        if (!$masterReport) {
+            return [];
+        }
+
+        // Get columns from the database record
+        return $masterReport->columns ?? [];
     }
 
     // ===== Filter Definitions =====
+    // Keys MUST match the elastic_config field names in each model
 
+    /**
+     * Patient filters
+     * Model fields: medical_record, name, nik, pob, dob, first_name, last_name, etc.
+     */
     protected function getPatientFilters(): array
     {
         return [
             ['label' => 'No. RM', 'key' => 'medical_record', 'type' => 'InputText'],
-            ['label' => 'NIK', 'key' => 'people.card_identity.nik', 'type' => 'InputText'],
+            ['label' => 'NIK', 'key' => 'nik', 'type' => 'InputText'],
             ['label' => 'Nama Pasien', 'key' => 'name', 'type' => 'InputText'],
-            ['label' => 'Tempat Lahir', 'key' => 'people.pob', 'type' => 'InputText'],
-            ['label' => 'Tanggal Lahir', 'key' => 'people.dob', 'type' => 'InputText'],
+            ['label' => 'Tempat Lahir', 'key' => 'pob', 'type' => 'InputText'],
+            ['label' => 'Tanggal Lahir', 'key' => 'dob', 'type' => 'DatePicker'],
         ];
     }
 
+    /**
+     * VisitPatient filters
+     * Model fields: name, medical_record, nik, visit_code, medic_service_label, status, etc.
+     */
     protected function getVisitPatientFilters(): array
     {
         return [
-            ['label' => 'Nama Pasien', 'key' => 'patient.name', 'type' => 'InputText'],
+            ['label' => 'Nama Pasien', 'key' => 'patient_name', 'type' => 'InputText'],
+            ['label' => 'No. RM', 'key' => 'medical_record', 'type' => 'InputText'],
             ['label' => 'Kode Kunjungan', 'key' => 'visit_code', 'type' => 'InputText'],
-            ['label' => 'Layanan', 'key' => 'medic_service.name', 'type' => 'InputText'],
-        ];
-    }
-
-    protected function getDiagnosisFilters(): array
-    {
-        return [
-            ['label' => 'Nama Diagnosis', 'key' => 'disease_name', 'type' => 'InputText'],
-            ['label' => 'Nama Pasien', 'key' => 'patient.name', 'type' => 'InputText'],
-        ];
-    }
-
-    protected function getBillingFilters(): array
-    {
-        return [
-            ['label' => 'Kode Billing', 'key' => 'billing_code', 'type' => 'InputText'],
-            ['label' => 'Nama Pasien', 'key' => 'patient.name', 'type' => 'InputText'],
+            ['label' => 'Layanan', 'key' => 'medic_service_label', 'type' => 'InputText'],
             ['label' => 'Status', 'key' => 'status', 'type' => 'InputText'],
         ];
     }
 
+    /**
+     * PatientIllness (Diagnosis) filters
+     * Model fields: disease_name, name, patient_id
+     */
+    protected function getDiagnosisFilters(): array
+    {
+        return [
+            ['label' => 'Nama Diagnosis', 'key' => 'disease_name', 'type' => 'InputText'],
+            ['label' => 'Nama Pasien', 'key' => 'patient_name', 'type' => 'InputText'],
+        ];
+    }
+
+    /**
+     * Billing filters
+     * Model fields: billing_code, patient_name, patient_nik, consument_name, status
+     */
+    protected function getBillingFilters(): array
+    {
+        return [
+            ['label' => 'Kode Billing', 'key' => 'billing_code', 'type' => 'InputText'],
+            ['label' => 'Nama Pasien', 'key' => 'patient_name', 'type' => 'InputText'],
+            ['label' => 'NIK', 'key' => 'patient_nik', 'type' => 'InputText'],
+            ['label' => 'Status', 'key' => 'status', 'type' => 'InputText'],
+        ];
+    }
+
+    /**
+     * Invoice (Payment) filters
+     * Model fields: invoice_code, billing_code, patient_name, patient_nik, payer_name
+     */
     protected function getPaymentFilters(): array
     {
         return [
             ['label' => 'Kode Invoice', 'key' => 'invoice_code', 'type' => 'InputText'],
-            ['label' => 'Nama Pasien', 'key' => 'patient.name', 'type' => 'InputText'],
-            ['label' => 'Metode Pembayaran', 'key' => 'payment_method', 'type' => 'InputText'],
+            ['label' => 'Kode Billing', 'key' => 'billing_code', 'type' => 'InputText'],
+            ['label' => 'Nama Pasien', 'key' => 'patient_name', 'type' => 'InputText'],
+            ['label' => 'NIK', 'key' => 'patient_nik', 'type' => 'InputText'],
+            ['label' => 'Payer', 'key' => 'payer_name', 'type' => 'InputText'],
         ];
     }
 
+    /**
+     * VisitExamination (Medic Observation) filters
+     * Model fields: patient_name, patient_medical_record, visit_examination_code
+     */
     protected function getMedicObservationFilters(): array
     {
         return [
-            ['label' => 'Nama Pasien', 'key' => 'patient.name', 'type' => 'InputText'],
-            ['label' => 'Tipe Observasi', 'key' => 'observation_type', 'type' => 'InputText'],
+            ['label' => 'Nama Pasien', 'key' => 'patient_name', 'type' => 'InputText'],
+            ['label' => 'No. RM', 'key' => 'patient_medical_record', 'type' => 'InputText'],
+            ['label' => 'Kode Pemeriksaan', 'key' => 'visit_examination_code', 'type' => 'InputText'],
         ];
     }
 
+    /**
+     * Refund filters
+     * Model fields: code, patient_name, patient_nik, invoice_code
+     */
     protected function getRefundFilters(): array
     {
         return [
             ['label' => 'Kode Refund', 'key' => 'refund_code', 'type' => 'InputText'],
-            ['label' => 'Nama Pasien', 'key' => 'patient.name', 'type' => 'InputText'],
-            ['label' => 'Tipe', 'key' => 'type', 'type' => 'InputText'],
-        ];
-    }
-
-    // ===== Column Definitions =====
-
-    protected function getPatientColumns(): array
-    {
-        return [
-            ['key' => 'medical_record', 'label' => 'No RM'],
-            ['key' => 'people.card_identity.nik', 'label' => 'NIK'],
-            ['key' => 'name', 'label' => 'Nama Pasien'],
-            ['key' => 'patient_type.name', 'label' => 'Jenis Pasien'],
-            ['key' => 'people.phone_1', 'label' => 'Kontak 1'],
-            ['key' => 'people.phone_2', 'label' => 'Kontak 2'],
-            ['key' => 'people.age', 'label' => 'Usia'],
-            ['key' => 'people.sex', 'label' => 'Jenis Kelamin'],
-            ['key' => 'people.pob', 'label' => 'Tempat Lahir'],
-            ['key' => 'people.dob', 'label' => 'Tanggal Lahir'],
-        ];
-    }
-
-    protected function getVisitPatientColumns(): array
-    {
-        return [
-            ['key' => 'visit_code', 'label' => 'Kode Kunjungan'],
-            ['key' => 'patient.name', 'label' => 'Nama Pasien'],
-            ['key' => 'patient.medical_record', 'label' => 'No RM'],
-            ['key' => 'medic_service.name', 'label' => 'Layanan'],
-            ['key' => 'visit_date', 'label' => 'Tanggal Kunjungan'],
-            ['key' => 'status', 'label' => 'Status'],
-        ];
-    }
-
-    protected function getDiagnosisColumns(): array
-    {
-        return [
-            ['key' => 'name', 'label' => 'Nama Diagnosis'],
-            ['key' => 'disease.code', 'label' => 'Kode Diagnosis'],
-            ['key' => 'classification_disease.name', 'label' => 'Klasifikasi Penyakit'],
-            ['key' => 'classification_disease.code', 'label' => 'Kode Klasifikasi Penyakit'],
-            ['key' => 'patient.name', 'label' => 'Nama Pasien'],
-            ['key' => 'patient.people.sex', 'label' => 'Jenis Kelamin'],
-            ['key' => 'patient.people.dob', 'label' => 'Tanggal Lahir'],
-            ['key' => 'created_at', 'label' => 'Tanggal Dibuat'],
-        ];
-    }
-
-    protected function getBillingColumns(): array
-    {
-        return [
-            ['key' => 'billing_code', 'label' => 'Kode Billing'],
-            ['key' => 'patient.name', 'label' => 'Nama Pasien'],
-            ['key' => 'total_amount', 'label' => 'Total'],
-            ['key' => 'status', 'label' => 'Status'],
-            ['key' => 'created_at', 'label' => 'Tanggal'],
-        ];
-    }
-
-    protected function getPaymentColumns(): array
-    {
-        return [
-            ['key' => 'invoice_code', 'label' => 'Kode Invoice'],
-            ['key' => 'patient.name', 'label' => 'Nama Pasien'],
-            ['key' => 'total_amount', 'label' => 'Total Pembayaran'],
-            ['key' => 'payment_method', 'label' => 'Metode Pembayaran'],
-            ['key' => 'paid_at', 'label' => 'Tanggal Bayar'],
-        ];
-    }
-
-    protected function getMedicObservationColumns(): array
-    {
-        return [
-            ['key' => 'patient.name', 'label' => 'Nama Pasien'],
-            ['key' => 'observation_type', 'label' => 'Tipe Observasi'],
-            ['key' => 'observation_value', 'label' => 'Nilai'],
-            ['key' => 'observed_at', 'label' => 'Waktu Observasi'],
-        ];
-    }
-
-    protected function getRefundColumns(): array
-    {
-        return [
-            ['key' => 'refund_code', 'label' => 'Kode Refund'],
-            ['key' => 'patient.name', 'label' => 'Nama Pasien'],
-            ['key' => 'type', 'label' => 'Tipe'],
-            ['key' => 'amount', 'label' => 'Jumlah'],
-            ['key' => 'reason', 'label' => 'Alasan'],
-            ['key' => 'created_at', 'label' => 'Tanggal'],
+            ['label' => 'Kode Invoice', 'key' => 'invoice_code', 'type' => 'InputText'],
+            ['label' => 'Nama Pasien', 'key' => 'patient_name', 'type' => 'InputText'],
+            ['label' => 'NIK', 'key' => 'patient_nik', 'type' => 'InputText'],
         ];
     }
 }

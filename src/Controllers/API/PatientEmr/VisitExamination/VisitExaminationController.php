@@ -16,7 +16,7 @@ class VisitExaminationController extends EnvironmentController
         return $this->getVisitExaminationPaginate();
     }
 
-    public function show(ShowRequest $request){
+    public function show(ShowRequest $request){        
         return $this->showVisitExamination();
     }
 

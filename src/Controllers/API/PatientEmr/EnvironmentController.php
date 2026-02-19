@@ -16,7 +16,6 @@ use Projects\WellmedBackbone\Contracts\Schemas\ModulePatient\{
     PractitionerEvaluation,
 };
 use Projects\WellmedGateway\Controllers\API\ApiController as ApiBaseController;
-use Hanafalah\LaravelSupport\Jobs\ElasticJob;
 use Projects\WellmedBackbone\Schemas\ModulePatient\VisitExamination;
 use Projects\WellmedBackbone\Schemas\ModulePatient\VisitPatient;
 use Projects\WellmedBackbone\Schemas\ModulePatient\VisitRegistration;
@@ -38,7 +37,7 @@ class EnvironmentController extends ApiBaseController{
         protected Reservation $__reservation_schema
     )
     {
-        parent::__construct();   
+        parent::__construct();
     }
 
     protected function commonConditional($query){
@@ -90,60 +89,5 @@ class EnvironmentController extends ApiBaseController{
             }
         }
         return $medic_service_id ?? null;
-    }
-
-    protected function elasticForVisitPatient(string|array $visit_patient_id, bool $as_bulk_datas = false){
-        if (is_array($visit_patient_id)){
-            $visit_patient = $visit_patient_id; //visit_patient result show
-        }else{
-            $visit_patient_model = $this->VisitPatientModel();
-            $shows = array_merge($visit_patient_model->showUsingRelation(),[
-                'visitRegistrations.paymentSummary.paymentDetails.transactionItem',
-            ]);
-            $visit_patient_model = $visit_patient_model->with($shows)->findOrFail($visit_patient_id);
-        }
-        $visit_registration_data = [
-            'index' => config('app.elasticsearch.indexes.visit_registration.full_name'),
-            'data'  => []
-        ];
-        $visit_exam_data = [
-            'index' => config('app.elasticsearch.indexes.visit_examination.full_name'),
-            'data' => []
-        ];
-        foreach ($visit_patient_model->visitRegistrations as $visit_registration) {
-            $visit_registration->load($visit_registration->showUsingRelation());
-            $visit_registration_data['data'][] = json_decode(json_encode($visit_registration->toShowApi()->resolve()),true);
-            if (isset($visit_registration->visitExamination)){
-                $visit_examination = $visit_registration->visitExamination;
-                $visit_examination->load($visit_examination->showUsingRelation());
-                $visit_exam_data['data'][] = json_decode(json_encode($visit_examination->toShowApi()->resolve()),true);
-            }
-        }   
-        $visit_patient ??= $visit_patient_model->toShowApi()->resolve();
-        $visit_patient = json_decode(json_encode($visit_patient),true);
-        $visit_patient_data = [
-            'index' => config('app.elasticsearch.indexes.visit_patient.full_name'),
-            'data'  => [
-                $visit_patient
-            ]
-        ];
-        if ($as_bulk_datas){
-            return [
-                $visit_patient_data,
-                $visit_registration_data,
-                $visit_exam_data
-            ];
-        }else{
-            dispatch(new ElasticJob([
-                'type'  => 'BULK',
-                'datas' => [
-                    $visit_patient_data,
-                    $visit_registration_data,
-                    $visit_exam_data
-                ]
-            ]))
-            ->onQueue('elasticsearch')
-            ->onConnection('rabbitmq');
-        }
     }
 }

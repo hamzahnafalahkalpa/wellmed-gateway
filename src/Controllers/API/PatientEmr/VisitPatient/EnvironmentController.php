@@ -35,11 +35,10 @@ class EnvironmentController extends EnvEnvironmentController{
 
     protected function storeVisitPatient(?callable $callback = null){
         $this->commonRequest();
-        $result = $this->__visit_patient_schema->conditionals(function($query) use ($callback){
+        // ElasticSearchObserver handles ES indexing automatically on model create/update
+        return $this->__visit_patient_schema->conditionals(function($query) use ($callback){
             $this->commonConditional($query);
             $callback($query);
         })->storeVisitPatient();
-        $this->elasticForVisitPatient($result['id']);
-        return $result;
     }
 }

@@ -4,10 +4,15 @@ namespace Projects\WellmedGateway\Controllers\API\Reporting\Report;
 
 trait HasPaymentRecap{
     public function paymentRecap(){
-        // $query_params 
+        // $query_params
         $response = &$this->__response;
+        $prefix = config('elasticsearch.prefix', config('app.env', 'development'));
+        $separator = config('elasticsearch.separator', '.');
+        $indexName = config('elasticsearch.indices.billing.name', 'billing');
+        $fullIndexName = $prefix . $separator . $indexName;
+
         $search = [
-            'index' => config('app.elasticsearch.indexes.billing.full_name'),
+            'index' => $fullIndexName,
             'body'  => [
                 'from' => $response['from'],
                 'size' => $response['per_page']

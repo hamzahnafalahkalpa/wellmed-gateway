@@ -4,10 +4,15 @@ namespace Projects\WellmedGateway\Controllers\API\Reporting\Report;
 
 trait HasRefundDiscountRecap{
     public function refundDiscountRecap(){
-        // $query_params 
+        // $query_params
         $response = &$this->__response;
+        $prefix = config('elasticsearch.prefix', config('app.env', 'development'));
+        $separator = config('elasticsearch.separator', '.');
+        $indexName = config('elasticsearch.indices.refund.name', 'refund');
+        $fullIndexName = $prefix . $separator . $indexName;
+
         $search = [
-            'index' => config('app.elasticsearch.indexes.refund.full_name'),
+            'index' => $fullIndexName,
             'body'  => [
                 'from' => $response['from'],
                 'size' => $response['per_page']

@@ -70,9 +70,8 @@ class PointOfSaleController extends EnvironmentController{
         $data['reference'] = $reference;
         $data['reference_type'] = $referenceType;
         request()->merge($data);
-        $transaction = $this->storePosTransaction();
-        $this->elasticBillingIndexing($transaction['billing']['id']);
-        return $transaction;
+        // ElasticSearchObserver handles ES indexing automatically on model create/update
+        return $this->storePosTransaction();
     }
 
     public function destroy(DeleteRequest $request){

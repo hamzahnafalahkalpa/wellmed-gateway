@@ -5,10 +5,15 @@ use Illuminate\Support\Str;
 
 trait HasPatientRecap{
     public function patientRecap(){
-        // $query_params 
+        // $query_params
         $response = &$this->__response;
+        $prefix = config('elasticsearch.prefix', config('app.env', 'development'));
+        $separator = config('elasticsearch.separator', '.');
+        $indexName = config('elasticsearch.indices.patient.name', 'patient');
+        $fullIndexName = $prefix . $separator . $indexName;
+
         $search = [
-            'index' => config('app.elasticsearch.indexes.patient.full_name'),
+            'index' => $fullIndexName,
             'body'  => [
                 'from' => $response['from'],
                 'size' => $response['per_page']

@@ -4,13 +4,18 @@ namespace Projects\WellmedGateway\Controllers\API\Reporting\Report;
 
 trait HasMedicObservationRecap{
     public function medicObservationRecap(){
-        // $query_params 
+        // $query_params
         $response = &$this->__response;
+        $prefix = config('elasticsearch.prefix', config('app.env', 'development'));
+        $separator = config('elasticsearch.separator', '.');
+        $indexName = config('elasticsearch.indices.patient_illness.name', 'patient_illness');
+        $fullIndexName = $prefix . $separator . $indexName;
+
         $search = [
-            'index' => config('app.elasticsearch.indexes.patient_illness.full_name'),
+            'index' => $fullIndexName,
             'body'  => [
                 'from' => $response['from'],
-                'size' => $response['per_page']                
+                'size' => $response['per_page']
             ]
         ];
         $response['filters'] = [

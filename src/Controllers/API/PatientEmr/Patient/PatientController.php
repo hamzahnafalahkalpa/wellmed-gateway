@@ -2,7 +2,6 @@
 
 namespace Projects\WellmedGateway\Controllers\API\PatientEmr\Patient;
 
-use Hanafalah\LaravelSupport\Jobs\ElasticJob;
 use Projects\WellmedGateway\Requests\API\PatientEmr\Patient\{
     ShowRequest, ViewRequest, DeleteRequest, StoreRequest
 };
@@ -138,24 +137,9 @@ class PatientController extends EnvironmentController{
         $data = request()->all();
         unset($data['visit_examination']);
         request()->replace($data);
-        $patient = $this->__patient_schema->storePatient();
-        $bulks = [
-            [
-                'index' => config('app.elasticsearch.indexes.patient.full_name'),
-                'data'  => [$patient]
-            ]
-        ];
-        if (isset($patient['visit_examination'])) {
-            $bulks = array_merge($bulks, $this->elasticForVisitPatient($patient['visit_examination']['visit_patient_id'], true));
-        }
-        dispatch(new ElasticJob([
-            'type'  => 'BULK',
-            'datas' => $bulks
-        ]))
-        ->onQueue('elasticsearch')
-        ->onConnection('rabbitmq');
 
-        return $patient;
+        // ElasticSearchObserver handles ES indexing automatically on model create/update
+        return $this->__patient_schema->storePatient();
     }
 
     public function show(ShowRequest $request){
