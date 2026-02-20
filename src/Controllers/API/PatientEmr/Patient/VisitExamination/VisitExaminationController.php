@@ -45,7 +45,11 @@ class VisitExaminationController extends EnvironmentController
             'patient_id' => request()->patient_id,
             "patient_type_service_id" => $patient_type_service_id,
             'patient_model' => $patient_model,
-            'visit_registration' => $visit_registration
+            'visit_registration' => $visit_registration,
+            'practitioner_evaluation' => [
+                "practitioner_type" => "Employee", //nullable, default from config
+                "practitioner_id"=> $this->global_employee->getKey()
+            ]
             // 'visit_registration' => [
             //     'id' => null,
             //     'status' => 'PROCESSING',
