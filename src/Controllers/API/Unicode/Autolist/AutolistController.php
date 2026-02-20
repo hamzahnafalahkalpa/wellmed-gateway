@@ -196,8 +196,10 @@ class AutolistController extends ApiController{
             break;
             case 'Workspace':
                 if (isset(request()->is_satu_sehat_integration) && isset(request()->id)){
+                    $workspace = app(config('database.models.Workspace'))->where('uuid',request()->id)->first();
                     request()->merge([
-                        'type' => 'find'
+                        'type' => 'find',
+                        'id' => $workspace->id
                     ]);
                     $result = $this->callAutolist($morph);
                     $satu_sehat = &$result['integration']['satu_sehat'];
