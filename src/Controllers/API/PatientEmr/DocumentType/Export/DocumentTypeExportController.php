@@ -46,7 +46,8 @@ class DocumentTypeExportController extends EnvironmentController{
 
                 $visit_examination = $visit_examination->toShowApi()->resolve();
                 $visit_examination = json_decode(json_encode($visit_examination));
-                $visit_examination->created_at = \Carbon\Carbon::parse($visit_examination->created_at)->format('d/m/Y');
+                // Keep created_at as Carbon object for proper formatting in blade
+                $visit_examination->created_at = \Carbon\Carbon::parse($visit_examination->created_at);
                 $views = ['wellmed::exports.'.request()->type.'.'.Str::kebab($morph),[
                     'workspace'         => $workspace,
                     'assessment'        => $assessment,
