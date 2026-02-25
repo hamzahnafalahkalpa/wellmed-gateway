@@ -5,9 +5,6 @@ namespace Projects\WellmedGateway\Controllers\API\PatientEmr\VisitRegistration;
 use Projects\WellmedGateway\Requests\API\PatientEmr\VisitRegistration\{
     ViewRequest, StoreRequest, ShowRequest, DeleteRequest, UpdateRequest
 };
-use Hanafalah\ModulePatient\{
-    Enums\VisitRegistration\Status,
-};
 use Illuminate\Support\Str;
 
 class VisitRegistrationController extends EnvironmentController
