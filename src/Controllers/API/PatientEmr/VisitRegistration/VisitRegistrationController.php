@@ -5,6 +5,9 @@ namespace Projects\WellmedGateway\Controllers\API\PatientEmr\VisitRegistration;
 use Projects\WellmedGateway\Requests\API\PatientEmr\VisitRegistration\{
     ViewRequest, StoreRequest, ShowRequest, DeleteRequest, UpdateRequest
 };
+use Hanafalah\ModulePatient\{
+    Enums\VisitRegistration\Status,
+};
 use Illuminate\Support\Str;
 
 class VisitRegistrationController extends EnvironmentController
@@ -43,7 +46,7 @@ class VisitRegistrationController extends EnvironmentController
 
     public function update(UpdateRequest $request){
         if (!isset(request()->id)) throw new \Exception('Id is required');
-        if (!in_array(request()->type,['DPJP'])) throw new \Exception('Type is not available');
+        if (!in_array(request()->type,['DPJP','status'])) throw new \Exception('Type is not available');
         $visit_registration_model = $this->VisitRegistrationModel()->findOrFail(request()->id);
         return $this->transaction(function() use ($visit_registration_model){
             switch (request()->type) {
@@ -66,12 +69,10 @@ class VisitRegistrationController extends EnvironmentController
                         ]
                     ));
                     $visit_registration_model->load(['practitionerEvaluation']);
-                    // $visit_examination_model = $visit_registration_model->visitExamination()->orderBy('created_at','desc')->limit(1)->first();
-                    // if (isset($visit_examination_model)){
-                    //     $visit_registration_model->load($visit_registration_model->showUsingRelation());
-                    //     $visit_examination_model->setAttribute('prop_visit_registration',$visit_registration_model->toShowApi()->resolve());
-                    //     $visit_examination_model->save();
-                    // }
+                break;
+                case 'status':
+                    $visit_registration_model->status = request()->status;
+                    $visit_registration_model->save();
                 break;
             }
             return $this->__visit_registration_schema->showVisitRegistration($visit_registration_model);
