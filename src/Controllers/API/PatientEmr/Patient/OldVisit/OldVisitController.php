@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 
 class OldVisitController extends EnvironmentController{
     public function index(Request $request){
-        return $this->__old_visit_schema->viewOldVisitPaginate();
+        return $this->__old_visit_schema->conditionals(function($query){
+            $query->where('patient_id',request()->patient_id);
+        })->viewOldVisitPaginate();
     }
 }

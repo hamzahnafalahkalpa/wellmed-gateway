@@ -75,20 +75,38 @@ class Dashboard implements DashboardContract
         try {
             $this->ensureIndexExists($periodType);
 
+            $query = $this->buildQuery($params);
+            Log::channel('elasticsearch')->info('Dashboard query', ['query' => $query, 'params' => $params]);
+
             $response = $this->client->search([
                 'index' => $this->getIndexName($periodType),
-                'body' => $this->buildQuery($params)
+                'body' => $query
             ]);
 
             $responseArray = $response->asArray();
+            Log::channel('elasticsearch')->info('Dashboard response', [
+                'hits_count' => count($responseArray['hits']['hits'] ?? []),
+                'first_hit_date' => $responseArray['hits']['hits'][0]['_source']['date'] ?? null
+            ]);
 
-            // If no data found, create default document
+            // If no data found for the requested date, try to get the last available document
             if (empty($responseArray['hits']['hits'])) {
                 $timestamp = $this->getTimestampFromParams($params);
-                $this->createDefaultDocument($periodType, (int) $tenantId, $workspaceId, $timestamp);
+                Log::channel('elasticsearch')->info('No hits found, creating default document', [
+                    'timestamp' => $timestamp->format('Y-m-d'),
+                    'tenant_id' => $tenantId,
+                    'workspace_id' => $workspaceId
+                ]);
 
-                // Return the default response
-                return $this->getDefaultDashboardResponse($periodType, $timestamp, $params);
+                // Try to fetch any previous document as fallback
+                $previousData = $this->fetchPreviousPeriodData($periodType, (int) $tenantId, $workspaceId, $timestamp);
+
+                // Create default document for today
+                $createResult = $this->createDefaultDocument($periodType, (int) $tenantId, $workspaceId, $timestamp);
+                Log::channel('elasticsearch')->info('Create default document result', ['result' => $createResult]);
+
+                // Return the default response with previous data if available
+                return $this->getDefaultDashboardResponse($periodType, $timestamp, $params, $previousData);
             }
             return $this->formatDashboardResponse($responseArray, $params);
 
@@ -100,7 +118,7 @@ class Dashboard implements DashboardContract
                 $timestamp = $this->getTimestampFromParams($params);
                 $this->createDefaultDocument($periodType, (int) $tenantId, $workspaceId, $timestamp);
 
-                return $this->getDefaultDashboardResponse($periodType, $timestamp, $params);
+                return $this->getDefaultDashboardResponse($periodType, $timestamp, $params, null);
             }
 
             Log::error('Dashboard metrics query failed', [
@@ -145,9 +163,11 @@ class Dashboard implements DashboardContract
     {
         switch ($params['search_type'] ?? self::PERIOD_DAILY) {
             case self::PERIOD_DAILY:
-                if (!empty($params['search_date'])) {
-                    $must[] = ['term' => ['date' => Carbon::parse($params['search_date'])->format('Y-m-d')]];
-                }
+                // Default to today if search_date not provided
+                $searchDate = !empty($params['search_date'])
+                    ? Carbon::parse($params['search_date'])->format('Y-m-d')
+                    : Carbon::now()->format('Y-m-d');
+                $must[] = ['term' => ['date' => $searchDate]];
                 break;
             case self::PERIOD_WEEKLY:
                 if (!empty($params['search_year'])) {
@@ -182,24 +202,51 @@ class Dashboard implements DashboardContract
     {
         $now = Carbon::now();
         $periodType = $params['search_type'] ?? self::PERIOD_DAILY;
+        $requestedTimestamp = $this->getTimestampFromParams($params);
 
-        // No data found - return defaults with transformers applied
-        if (empty($response['hits']['hits'])) {
-            return $this->getDefaultDashboardResponse($periodType, $now, $params);
-        }
-
-        $hit = $response['hits']['hits'][0]['_source'];
-
-        // Get tenant context for fetching previous period data
+        // Get tenant context
         $tenant_model = tenancy()->tenant;
         $tenantId = $params['search_tenant_id'] ?? $tenant_model?->getKey() ?? null;
         $workspaceId = $params['search_workspace_id'] ?? $tenant_model?->reference_id ?? null;
 
-        // Fetch previous period data for comparison
+        // No data found - return defaults with previous period data
+        if (empty($response['hits']['hits'])) {
+            return $this->getDefaultDashboardResponse($periodType, $requestedTimestamp, $params);
+        }
+
+        $hit = $response['hits']['hits'][0]['_source'];
+
+        // Validate if the returned document matches the requested date
+        $documentDate = $hit['date'] ?? null;
+        $requestedDate = $requestedTimestamp->format('Y-m-d');
+        $isMatchingDate = ($documentDate === $requestedDate);
+
+        Log::channel('elasticsearch')->info('Document date validation', [
+            'document_date' => $documentDate,
+            'requested_date' => $requestedDate,
+            'is_matching' => $isMatchingDate
+        ]);
+
+        // If document date doesn't match requested date, treat it as "previous" data
+        if (!$isMatchingDate) {
+            // The hit is from a previous date, use it as previous data
+            // Create default document for the requested date
+            if ($tenantId && $workspaceId) {
+                $createResult = $this->createDefaultDocument($periodType, (int) $tenantId, $workspaceId, $requestedTimestamp);
+                Log::channel('elasticsearch')->info('Created document for requested date', [
+                    'result' => $createResult,
+                    'requested_date' => $requestedDate
+                ]);
+            }
+
+            // Return default response for today with previous data populated
+            return $this->getDefaultDashboardResponse($periodType, $requestedTimestamp, $params, $hit);
+        }
+
+        // Document matches requested date, fetch previous period data for comparison
         $previousData = null;
         if ($tenantId && $workspaceId) {
-            $timestamp = $this->getTimestampFromParams($params);
-            $previousData = $this->fetchPreviousPeriodData($periodType, (int) $tenantId, $workspaceId, $timestamp);
+            $previousData = $this->fetchPreviousPeriodData($periodType, (int) $tenantId, $workspaceId, $requestedTimestamp);
         }
 
         // Get raw data with fallbacks
@@ -267,16 +314,15 @@ class Dashboard implements DashboardContract
      * Override to apply transformers to default dashboard response.
      * Fetches previous period data for intelligent defaults.
      */
-    protected function getDefaultDashboardResponse(string $periodType, Carbon $now, array $params = []): array
+    protected function getDefaultDashboardResponse(string $periodType, Carbon $now, array $params = [], ?array $previousData = null): array
     {
         // Get tenant context
         $tenant_model = tenancy()->tenant;
         $tenantId = $params['search_tenant_id'] ?? $tenant_model?->getKey() ?? null;
         $workspaceId = $params['search_workspace_id'] ?? $tenant_model?->reference_id ?? null;
 
-        // Fetch previous period data for intelligent defaults
-        $previousData = null;
-        if ($tenantId && $workspaceId) {
+        // Fetch previous period data for intelligent defaults if not provided
+        if ($previousData === null && $tenantId && $workspaceId) {
             $previousData = $this->fetchPreviousPeriodData($periodType, (int) $tenantId, $workspaceId, $now);
         }
 
