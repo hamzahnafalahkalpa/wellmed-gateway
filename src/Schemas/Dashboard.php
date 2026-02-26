@@ -190,6 +190,18 @@ class Dashboard implements DashboardContract
 
         $hit = $response['hits']['hits'][0]['_source'];
 
+        // Get tenant context for fetching previous period data
+        $tenant_model = tenancy()->tenant;
+        $tenantId = $params['search_tenant_id'] ?? $tenant_model?->getKey() ?? null;
+        $workspaceId = $params['search_workspace_id'] ?? $tenant_model?->reference_id ?? null;
+
+        // Fetch previous period data for comparison
+        $previousData = null;
+        if ($tenantId && $workspaceId) {
+            $timestamp = $this->getTimestampFromParams($params);
+            $previousData = $this->fetchPreviousPeriodData($periodType, (int) $tenantId, $workspaceId, $timestamp);
+        }
+
         // Get raw data with fallbacks
         $statistics = $hit['statistics'] ?? $this->getDefaultStatistics($periodType);
         $pendingItems = $hit['pending_items'] ?? $this->getDefaultPendingItems($periodType);
@@ -202,6 +214,29 @@ class Dashboard implements DashboardContract
             $this->getDefaultMotivationalStats(),
             $hit['motivational_stats'] ?? []
         );
+
+        // Populate queue_services with previous period data
+        $queueServices = $this->getQueueServicesWithPreviousData(
+            $hit['queue_services'] ?? [],
+            $previousData['queue_services'] ?? [],
+            $periodType
+        );
+
+        // Populate diagnosis_treatment with previous period data
+        $diagnosisTreatment = $this->getDiagnosisTreatmentWithPreviousData(
+            $hit['diagnosis_treatment'] ?? [],
+            $previousData['diagnosis_treatment'] ?? [],
+            $periodType
+        );
+
+        // Populate trends with previous period data
+        $trends = $this->getTrendsWithPreviousData(
+            $hit['trends'] ?? $this->getDefaultTrends($periodType, $now),
+            $previousData['trends'] ?? [],
+            $periodType,
+            $now
+        );
+
         // Apply transformers for presentation data
         return [
             'motivational_stats' => $this->motivationalStatusTransformer->transform($motivationalStats),
@@ -209,16 +244,10 @@ class Dashboard implements DashboardContract
             'pending_items' => $this->pendingItemTransformer->transform($pendingItems, $periodType),
             'cashier' => $this->cashierTransformer->transform($cashier, $periodType),
             'billing' => $this->billingTransformer->transform($billing, $periodType),
-            'queue_services' => [
-                'current' => $hit['queue_services'] ?? [],
-                'previous' => [],
-            ],
-            'diagnosis_treatment' => [
-                'current' => $hit['diagnosis_treatment'] ?? [],
-                'previous' => [],
-            ],
+            'queue_services' => $queueServices,
+            'diagnosis_treatment' => $diagnosisTreatment,
             'workspace_integrations' => $this->workspaceIntegrationTransformer->transform($workspaceIntegrations, $periodType),
-            'trends' => $hit['trends'] ?? $this->getDefaultTrends($periodType, $now),
+            'trends' => $trends,
             'meta' => [
                 'period_type' => $hit['period_type'] ?? $periodType,
                 'timestamp' => $hit['timestamp'] ?? $now->toIso8601String(),
@@ -229,6 +258,7 @@ class Dashboard implements DashboardContract
                 'day' => $hit['day'] ?? $now->day,
                 'data_source' => 'elasticsearch',
                 'aggregation_period' => $hit['aggregation_period'] ?? null,
+                'has_previous_data' => !empty($previousData),
             ],
         ];
     }
