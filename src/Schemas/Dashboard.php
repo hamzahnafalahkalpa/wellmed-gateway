@@ -161,34 +161,47 @@ class Dashboard implements DashboardContract
      */
     protected function addDateFilters(array &$must, array $params): void
     {
+        $now = Carbon::now();
+
         switch ($params['search_type'] ?? self::PERIOD_DAILY) {
             case self::PERIOD_DAILY:
                 // Default to today if search_date not provided
                 $searchDate = !empty($params['search_date'])
                     ? Carbon::parse($params['search_date'])->format('Y-m-d')
-                    : Carbon::now()->format('Y-m-d');
+                    : $now->format('Y-m-d');
                 $must[] = ['term' => ['date' => $searchDate]];
                 break;
             case self::PERIOD_WEEKLY:
-                if (!empty($params['search_year'])) {
-                    $must[] = ['term' => ['year' => (int) $params['search_year']]];
-                }
-                if (!empty($params['search_week'])) {
-                    $must[] = ['term' => ['week' => (int) $params['search_week']]];
-                }
+                // Default to current week if not provided
+                $searchYear = !empty($params['search_year'])
+                    ? (int) $params['search_year']
+                    : (int) $now->format('Y');
+                $searchWeek = !empty($params['search_week'])
+                    ? (int) $params['search_week']
+                    : (int) $now->format('W');
+
+                $must[] = ['term' => ['year' => $searchYear]];
+                $must[] = ['term' => ['week' => $searchWeek]];
                 break;
             case self::PERIOD_MONTHLY:
-                if (!empty($params['search_year'])) {
-                    $must[] = ['term' => ['year' => (int) $params['search_year']]];
-                }
-                if (!empty($params['search_month'])) {
-                    $must[] = ['term' => ['month' => (int) $params['search_month']]];
-                }
+                // Default to current month if not provided
+                $searchYear = !empty($params['search_year'])
+                    ? (int) $params['search_year']
+                    : (int) $now->format('Y');
+                $searchMonth = !empty($params['search_month'])
+                    ? (int) $params['search_month']
+                    : (int) $now->format('n');
+
+                $must[] = ['term' => ['year' => $searchYear]];
+                $must[] = ['term' => ['month' => $searchMonth]];
                 break;
             case self::PERIOD_YEARLY:
-                if (!empty($params['search_year'])) {
-                    $must[] = ['term' => ['year' => (int) $params['search_year']]];
-                }
+                // Default to current year if not provided
+                $searchYear = !empty($params['search_year'])
+                    ? (int) $params['search_year']
+                    : (int) $now->format('Y');
+
+                $must[] = ['term' => ['year' => $searchYear]];
                 break;
         }
     }
