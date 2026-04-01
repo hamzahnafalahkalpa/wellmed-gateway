@@ -17,78 +17,29 @@ ApiAccess::secure(function(){
     ],function(){
         Route::post('refresh-token',[ApiAccessController::class,'refresh'])->name('refresh-token');
 
-        LaravelSupport::callRoutes(__DIR__.'/api');
-        Route::get('/wellmed-view',function(){
-            $workspace = tenancy()->tenant->reference;
-            return view('wellmed::exports.billing',['workspace'=>$workspace]);
-        });
-        Route::get('/wellmed-pdf',function(){
-            MicroTenant::tenantImpersonate(4);
-            $workspace = tenancy()->tenant->reference;
-            $workspace = $workspace->load($workspace->showUsingRelation());
-            $workspace = $workspace->toShowApi()->resolve();
-            $workspace = json_decode(json_encode($workspace));
-            $transaction = app(config('database.models.PosTransaction'));
-            $transaction = $transaction->with($transaction->showUsingRelation())->find('01kdbnfdzw35bbhb4hexy87622');
-            $transaction = $transaction->toShowApi()->resolve();
-            $transaction = json_decode(json_encode($transaction));
-            $transaction->created_at = \Carbon\Carbon::parse($transaction->created_at)->format('d/m/Y');
-            $billing = &$transaction->billing;
-            if (isset($billing)){
-                $invoices = &$billing->invoices;
-                foreach ($invoices as &$invoice){
-                    $payment_history = &$invoice->payment_history;
-                    if (isset($payment_history->form)){
-                        $payment_summaries = &$payment_history->form->payment_summaries;
-                        $payment_summary_model = app(config('database.models.PaymentSummary'));
-                        foreach ($payment_summaries as &$payment_summary){
-                            $payment_summary_model = $payment_summary_model->with([
-                                'paymentDetails' => function($query) use ($payment_summary){
-                                    $query->with('transactionItem')->whereIn('id',array_column($payment_summary->payment_details,'id'));
-                                }
-                            ])->findOrFail($payment_summary->id);
-                            $payment_summary = $payment_summary_model->toShowApi()->resolve();
-                            $payment_summary = json_decode(json_encode($payment_summary));
-                        }
+        Route::get('/entity-relations',function(){
+            $response = [];
+            $models = config('database.models',[]);
+return config('database.connections');
+//return $models;
+            foreach ($models as $key => $model) {
+                try {
+                    $model = app($model);
+                    if (method_exists($model,'viewUsingRelation')){
+                        $response[$key] = [
+                            'connection' => $model->getConnectionName(),
+                            'table' => $model->getTableName()
+                        ];
                     }
-                    foreach ($invoice->split_payments as &$split_payment) {
-                        $split_payment->created_at = \Carbon\Carbon::parse($split_payment->created_at)->format('d/m/Y');
-                    }
+                } catch (\Throwable $th) {
+                    //throw $th;
                 }
             }
-            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView(
-                'wellmed::exports.billing',
-                [
-                    'workspace'   => $workspace,
-                    'transaction' => $transaction
-                ]
-            )->setOptions([
-                'enable_php'    => true,
-                'enable_remote'=> true,
-            ]);
-            $dompdf = $pdf->getDomPDF();
-            $pdf->render();
-            $canvas = $dompdf->getCanvas();
-
-            $font = $dompdf->getFontMetrics()->get_font('Helvetica', 'normal');
-
-            $canvas->page_text(
-                // 260,
-                40,
-                820,
-                "Halaman {PAGE_NUM} dari {PAGE_COUNT} | Dicetak pada ".date('d/m/Y H:i'),
-                $font,
-                9,
-                [0, 0, 0]
-            );
-
-            return $pdf->stream('wellmed-billing.pdf');
-
-            // return $pdf->download('wellmed-billing.pdf');
-            // $workspace = tenancy()->tenant->reference;
-            // $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('wellmed::exports.billing', ['workspace'=>$workspace]);
-            // return $pdf->download('wellmed-billing.pdf');
+            return $response;
         });
+
+        LaravelSupport::callRoutes(__DIR__.'/api');
+        
     });
 });
 
@@ -272,76 +223,6 @@ if (config('app.env') !== 'production') {
     });
 }
 
-Route::get('/wellmed-view',function(){
-    MicroTenant::tenantImpersonate(4);
-    $workspace = tenancy()->tenant->reference;
-    $workspace = $workspace->load($workspace->showUsingRelation());
-    $workspace = $workspace->toShowApi()->resolve();
-    $workspace = json_decode(json_encode($workspace));
-    $transaction = app(config('database.models.PosTransaction'));
-    $transaction = $transaction->with($transaction->showUsingRelation())->find('01kdbnfdzw35bbhb4hexy87622');
-    $transaction = $transaction->toShowApi()->resolve();
-    $transaction = json_decode(json_encode($transaction));
-    $transaction->created_at = \Carbon\Carbon::parse($transaction->created_at)->format('d/m/Y');
-    $billing = &$transaction->billing;
-    if (isset($billing)){
-        $invoices = &$billing->invoices;
-        foreach ($invoices as &$invoice){
-            $payment_history = &$invoice->payment_history;
-            if (isset($payment_history->form)){
-                $payment_summaries = &$payment_history->form->payment_summaries;
-                $payment_summary_model = app(config('database.models.PaymentSummary'));
-                foreach ($payment_summaries as &$payment_summary){
-                    $payment_summary_model = $payment_summary_model->with([
-                        'paymentDetails' => function($query) use ($payment_summary){
-                            $query->with('transactionItem')->whereIn('id',array_column($payment_summary->payment_details,'id'));
-                        }
-                    ])->findOrFail($payment_summary->id);
-                    $payment_summary = $payment_summary_model->toShowApi()->resolve();
-                    $payment_summary = json_decode(json_encode($payment_summary));
-                }
-            }
-        }
-    }
-    return view('wellmed::exports.billing',['workspace'=>$workspace,'transaction'=>$transaction]);
-});
-Route::get('/wellmed-pdf',function(){
-    MicroTenant::tenantImpersonate(4);
-    $workspace = tenancy()->tenant->reference;
-    $workspace = $workspace->load($workspace->showUsingRelation());
-    $workspace = $workspace->toShowApi()->resolve();
-    $workspace = json_decode(json_encode($workspace));
-    $transaction = app(config('database.models.PosTransaction'));
-    $transaction = $transaction->with($transaction->showUsingRelation())->find('01kdbnfdzw35bbhb4hexy87622');
-    $transaction = $transaction->toShowApi()->resolve();
-    $transaction = json_decode(json_encode($transaction));
-    $transaction->created_at = \Carbon\Carbon::parse($transaction->created_at)->format('d/m/Y');
-    $billing = &$transaction->billing;
-    if (isset($billing)){
-        $invoices = &$billing->invoices;
-        foreach ($invoices as &$invoice){
-            $payment_history = &$invoice->payment_history;
-            if (isset($payment_history->form)){
-                $payment_summaries = &$payment_history->form->payment_summaries;
-                $payment_summary_model = app(config('database.models.PaymentSummary'));
-                foreach ($payment_summaries as &$payment_summary){
-                    $payment_summary_model = $payment_summary_model->with([
-                        'paymentDetails' => function($query) use ($payment_summary){
-                            $query->with('transactionItem')->whereIn('id',array_column($payment_summary->payment_details,'id'));
-                        }
-                    ])->findOrFail($payment_summary->id);
-                    $payment_summary = $payment_summary_model->toShowApi()->resolve();
-                    $payment_summary = json_decode(json_encode($payment_summary));
-                }
-            }
-        }
-    }
-    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('wellmed::exports.billing', ['workspace'=>$workspace,'transaction'=>$transaction]);
-    // return $pdf->download('wellmed-billing.pdf');
-    return $pdf->stream('wellmed-billing.pdf');
-        // return $pdf->download('wellm
-    // return view('wellmed::exports.billing',['workspace'=>$workspace,'transaction'=>$transaction]);
-});
 Route::post('api/patient/import/process',[PatientController::class,'import'])->name('import');
 Route::post('api/add-tenant',[AddTenantController::class,'store'])->name('add-tenant.store');
 Route::post('api/import/{type}',[ImportController::class,'store'])->name('import.store');
