@@ -18,7 +18,7 @@ class EnvironmentController extends EnvEnvironmentController{
             })->when(isset($callback),function ($query) use ($callback){
                 $callback($query);
             });
-        })->viewVisitRegistrationPaginate();
+        })->setParamLogic('and')->viewVisitRegistrationPaginate();
     }
 
     protected function showVisitRegistration(?callable $callback = null){        

@@ -30,7 +30,6 @@ class VisitRegistrationController extends EnvironmentController
 
     public function index(ViewRequest $request){
         return $this->getVisitRegistrationPaginate();
-
     }
 
     public function show(ShowRequest $request){
