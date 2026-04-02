@@ -5,7 +5,7 @@ namespace Projects\WellmedGateway\Controllers\API\PatientEmr\VisitRegistration;
 use Projects\WellmedGateway\Controllers\API\PatientEmr\EnvironmentController as EnvEnvironmentController;
 
 class EnvironmentController extends EnvEnvironmentController{
-    protected function getVisitRegistrationPaginate(?callable $callback = null){        
+    protected function getVisitRegistrationPaginate(?callable $callback = null){
         $this->commonRequest();
         return $this->__visit_registration_schema->conditionals(function($query) use ($callback){
             $this->commonConditional($query);
@@ -17,8 +17,10 @@ class EnvironmentController extends EnvEnvironmentController{
                     });
             })->when(isset($callback),function ($query) use ($callback){
                 $callback($query);
-            });
-        })->setParamLogic('and')->viewVisitRegistrationPaginate();
+            })
+            ->orderByRaw("(props->>'queue_number')::integer ASC NULLS LAST");
+        })->setParamLogic('and')
+        ->viewVisitRegistrationPaginate();
     }
 
     protected function showVisitRegistration(?callable $callback = null){        
