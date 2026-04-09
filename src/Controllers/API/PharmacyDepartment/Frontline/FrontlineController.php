@@ -33,7 +33,7 @@ class FrontlineController extends EnvironmentController
     }
 
     public function show(ShowRequest $request){
-        ruquest()->merge([
+        request()->merge([
             'is_historical' => true
         ]);
         return $this->showVisitExamination();
