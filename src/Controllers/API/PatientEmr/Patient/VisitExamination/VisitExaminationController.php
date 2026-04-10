@@ -7,6 +7,7 @@ use Projects\WellmedGateway\Requests\API\PatientEmr\Patient\VisitExamination\{
 };
 // use Projects\WellmedGateway\Controllers\API\PatientEmr\VisitExamination\EnvironmentController;
 use Projects\WellmedGateway\Controllers\API\PatientEmr\VisitPatient\EnvironmentController;
+use Illuminate\Support\Facades\Log;
 
 class VisitExaminationController extends EnvironmentController
 {
@@ -21,13 +22,48 @@ class VisitExaminationController extends EnvironmentController
         // Reserve next queue number from Elasticsearch (without incrementing counter yet)
         $queue_number = null;
         $queueService = null;
-        if (config('elasticsearch.enabled', false)) {
+        $esEnabled = config('elasticsearch.enabled', false);
+
+        Log::info('[VisitExamination] Starting queue number reservation', [
+            'elasticsearch.enabled' => $esEnabled,
+            'patient_id' => request()->patient_id,
+            'config_value' => config('elasticsearch.enabled'),
+            'config_type' => gettype(config('elasticsearch.enabled'))
+        ]);
+
+        if ($esEnabled) {
             try {
+                Log::debug('[VisitExamination] Attempting to instantiate VisitRegistrationQueueService');
                 $queueService = app(\Projects\WellmedBackbone\Services\VisitRegistrationQueueService::class);
+                Log::debug('[VisitExamination] Service instantiated successfully');
+
+                Log::debug('[VisitExamination] Calling reserveNextQueueNumber()');
                 $queue_number = $queueService->reserveNextQueueNumber();
+                Log::debug('[VisitExamination] reserveNextQueueNumber() returned', [
+                    'queue_number' => $queue_number,
+                    'type' => gettype($queue_number)
+                ]);
+
+                Log::info('[VisitExamination] Queue number reserved successfully', [
+                    'queue_number' => $queue_number,
+                    'patient_id' => request()->patient_id
+                ]);
             } catch (\Throwable $e) {
-                \Log::warning('Failed to reserve queue number from ES', ['error' => $e->getMessage()]);
+                Log::error('[VisitExamination] FAILED to reserve queue number from ES', [
+                    'error_message' => $e->getMessage(),
+                    'error_class' => get_class($e),
+                    'error_file' => $e->getFile(),
+                    'error_line' => $e->getLine(),
+                    'trace' => $e->getTraceAsString(),
+                    'queue_number_after_error' => $queue_number,
+                    'patient_id' => request()->patient_id
+                ]);
             }
+        } else {
+            Log::warning('[VisitExamination] Elasticsearch is disabled, queue number will be null', [
+                'config_elasticsearch_enabled' => config('elasticsearch.enabled'),
+                'patient_id' => request()->patient_id
+            ]);
         }
 
         $visit_registration = [
@@ -71,19 +107,30 @@ class VisitExaminationController extends EnvironmentController
             if ($queueService && $queue_number) {
                 try {
                     $queueService->confirmQueueNumber();
-                    \Log::info('Queue number confirmed in ES', ['queue_number' => $queue_number]);
-                } catch (\Throwable $e) {
-                    \Log::warning('Failed to confirm queue number in ES', [
+                    Log::info('Queue number confirmed in ES', [
                         'queue_number' => $queue_number,
-                        'error' => $e->getMessage()
+                        'patient_id' => request()->patient_id
+                    ]);
+                } catch (\Throwable $e) {
+                    Log::warning('Failed to confirm queue number in ES', [
+                        'queue_number' => $queue_number,
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString()
                     ]);
                 }
+            } else {
+                Log::info('Queue number not confirmed', [
+                    'has_queue_service' => $queueService !== null,
+                    'queue_number' => $queue_number,
+                    'reason' => $queueService === null ? 'Queue service not initialized' : 'Queue number is null'
+                ]);
             }
 
         } catch (\Throwable $th) {
-            \Log::error('Failed to store visit patient', [
+            Log::error('Failed to store visit patient', [
                 'error' => $th->getMessage(),
-                'reserved_queue_number' => $queue_number
+                'reserved_queue_number' => $queue_number,
+                'trace' => $th->getTraceAsString()
             ]);
             throw $th;
         }
