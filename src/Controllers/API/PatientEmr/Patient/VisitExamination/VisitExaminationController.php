@@ -18,14 +18,15 @@ class VisitExaminationController extends EnvironmentController
         $visit_examination['patient_model'] = $patient_model;
         $patient_type_service_id = $visit_examination['patient_type_service_id'] ?? $this->PatientTypeServiceModel()->where('label','UMUM')->firstOrFail()->getKey();
         $medic_service_id        = $visit_examination['medic_service_id'] ?? $this->MedicServiceModel()->where('label','UMUM')->firstOrFail()->getKey();
-        // Get next queue number from Elasticsearch
+        // Reserve next queue number from Elasticsearch (without incrementing counter yet)
         $queue_number = null;
+        $queueService = null;
         if (config('elasticsearch.enabled', false)) {
             try {
-                $queue_number = app(\Projects\WellmedBackbone\Services\VisitRegistrationQueueService::class)
-                    ->getNextQueueNumber();
+                $queueService = app(\Projects\WellmedBackbone\Services\VisitRegistrationQueueService::class);
+                $queue_number = $queueService->reserveNextQueueNumber();
             } catch (\Throwable $e) {
-                \Log::warning('Failed to get queue number from ES', ['error' => $e->getMessage()]);
+                \Log::warning('Failed to reserve queue number from ES', ['error' => $e->getMessage()]);
             }
         }
 
@@ -63,7 +64,29 @@ class VisitExaminationController extends EnvironmentController
             // ]
         ];
         request()->replace($visit_patient);
-        $visit_patient = $this->storeVisitPatient();
+        try {
+            $visit_patient = $this->storeVisitPatient();
+
+            // Confirm queue number in Elasticsearch after successful registration
+            if ($queueService && $queue_number) {
+                try {
+                    $queueService->confirmQueueNumber();
+                    \Log::info('Queue number confirmed in ES', ['queue_number' => $queue_number]);
+                } catch (\Throwable $e) {
+                    \Log::warning('Failed to confirm queue number in ES', [
+                        'queue_number' => $queue_number,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+
+        } catch (\Throwable $th) {
+            \Log::error('Failed to store visit patient', [
+                'error' => $th->getMessage(),
+                'reserved_queue_number' => $queue_number
+            ]);
+            throw $th;
+        }
         return $this->__visit_examination_schema->showVisitExamination($this->VisitExaminationModel()->findOrFail($visit_patient['visit_registrations'][0]['visit_examination']['id']));
     }
 }
