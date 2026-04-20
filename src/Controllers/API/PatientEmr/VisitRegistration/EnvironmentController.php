@@ -19,7 +19,7 @@ class EnvironmentController extends EnvEnvironmentController{
                 $callback($query);
             })
             ->orderByRaw("(props->>'queue_number')::integer ASC NULLS LAST");
-        })->setParamLogic('and')
+        })
         ->viewVisitRegistrationPaginate();
     }
 
