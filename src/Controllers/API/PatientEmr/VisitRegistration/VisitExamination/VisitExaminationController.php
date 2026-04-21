@@ -11,9 +11,14 @@ class VisitExaminationController extends EnvironmentController
 {
     protected function commonRequest(){
         parent::commonRequest();
-        request()->merge([
-            'search_visit_registration_id' => request()->visit_registration_id
-        ]);
+        // request()->merge([
+        //     'search_visit_registration_id' => request()->visit_registration_id
+        // ]);
+    }
+
+    protected function commonConditional($query)
+    {
+        $query->where('visit_registration_id',request()->visit_registration_id);
     }
 
     public function index(ViewRequest $request){
